@@ -10,16 +10,16 @@ The **Access Control Project** is a simple web application designed to manage us
 
 - **Homepage**: Provides a button to navigate to the login page.  
 - **Login Page**: Authenticates users using stored credentials in the database.  
-- **Query Page**: Allows users to perform database queries and view results.  
-- **Styling**: Consistent look and feel with reusable CSS.  
+- **Query Page**: Allows users to perform database queries and view results.   
 - **API Endpoints**: Simple RESTful APIs for login and data retrieval.
+- **bcrypt**: Added to the package for secure password handling.
 
 ---
 
 ## Prerequisites
 
 - **Docker**: Ensure Docker is installed and running.  
-- **Node.js and npm**: Needed for local development and testing.  
+ 
 
 ---
 
@@ -39,9 +39,6 @@ The **Access Control Project** is a simple web application designed to manage us
 
 - **Docker**:  
   - `Dockerfile`: Configures the Docker environment.
-
-- **Assets**:  
-  - `favicon.png`: Application favicon.
 
 ---
 
