@@ -13,44 +13,45 @@ function tologinpage() {
 // login: takes a username and password, passes into backend and returns result
 //  will reroute successful matches to query page
 function login() {
-    // get entered username and password
+    // Get entered username and password
     const inputusername = document.getElementById("userinput").value;
     const inputpassword = document.getElementById("password").value;
 
-    // init post req to backend with login creds
+    // Initiate POST request to the backend with login credentials
     fetch("http://" + parsedUrl.host + "/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({inputusername, inputpassword}),
+        body: JSON.stringify({ inputusername, inputpassword }),
     })
-
-    // handle response
-    .then((resp) => resp.text())
-    .then((data) => {
-        console.log(JSON.parse(data).success);
-
-        // if login was successful, redirect
-        if (JSON.parse(data).success) {
-            // login successful
-            console.log("Frontend redirecting to query...");
-            window.location.replace("query.html");
-        }
-
-        // else, reset fields !!! MUST ADD ALERT !!!
-        else{
-            console.log("Resetting login page...");
-            document.getElementById("userinput").value = "";
-            document.getElementById("password").value = "";
-        }
-    })
-
-    // error handler (this should be edited to work for users as well)
-    .catch((err) => {
-        console.log(err);
-    })
+        // Handle response
+        .then((resp) => {
+            if (resp.status === 200) {
+                // Login successful
+                console.log("Frontend redirecting to query...");
+                window.location.replace("query.html");
+            } else if (resp.status === 401) {
+                // Authentication failed
+                console.log("Resetting login page...");
+                document.getElementById("userinput").value = "";
+                document.getElementById("password").value = "";
+                alert("Incorrect username or password. Please try again.");
+            } else if (resp.status === 500) {
+                // Server or database error
+                console.log("Server error detected.");
+                alert("An error occurred on the server. Please try again later.");
+            } else {
+                throw new Error("Unexpected response status: " + resp.status);
+            }
+        })
+        // Error handler
+        .catch((err) => {
+            console.error("Network or unexpected error:", err);
+            alert("A network error occurred. Please check your connection and try again.");
+        });
 }
+
 
 
 // QUERY.HTML FUNCTION
