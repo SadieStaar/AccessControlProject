@@ -61,9 +61,4 @@ The Access Control Project is a simple web application for user authentication a
   - `package.json`: Manages project dependencies and scripts.
   - `dockerfile`: Docker setup (details not provided here).
 
-## Future Improvements
-- Hash passwords using `bcrypt` for secure authentication.
-- Add error alerts for failed login attempts.
-- Implement role-based access control for queries.
 
----
