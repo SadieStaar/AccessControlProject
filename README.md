@@ -2,7 +2,8 @@
 
 ## Overview
 
-The **Access Control Project** is a simple web application designed to manage user authentication and database queries. It features a Node.js backend with MySQL integration and a frontend served through Express. Docker is used to containerize the application for easy deployment and scalability.
+The **Access Control Project** is a simple app for user login and database queries. It uses Node.js for the backend, MySQL for the database, and Express to serve the frontend. Docker handles deployment.
+
 
 ---
 
