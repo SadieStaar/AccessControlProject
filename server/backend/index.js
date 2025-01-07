@@ -15,7 +15,7 @@ const registerSQL = "INSERT INTO users (username, password, email, salt) VALUES 
 const app = express();
 app.use(express.json());
 
-// Create SQL connection
+//create SQL connection
 let connection = mysql.createConnection({
   host: MYSQLHOST,
   user: MYSQLUSER,
@@ -23,15 +23,15 @@ let connection = mysql.createConnection({
   database: "users",
 });
 
-// Startup; gets static files
+//startup; gets static files
 app.use("/", express.static("frontend"));
 
-// Login endpoint
+//login 
 app.post("/login", function (req, resp) {
   const { inputusername, inputpassword } = req.body;
   console.log(`Username: ${inputusername}, Password: [hidden]`);
 
-  // Query SQL database for the hashed password
+  //Query SQL database for the hashed password
   connection.query(loginSQL, [inputusername], (error, results) => {
     if (error) {
       console.error("Database error:", error.message);
@@ -41,7 +41,7 @@ app.post("/login", function (req, resp) {
     if (results.length > 0) {
       const storedHash = results[0].password;
 
-      // Compare the provided password with the stored hash
+      //compare the provided password with the stored hash
       bcrypt.compare(inputpassword, storedHash, (err, match) => {
         if (err || !match) {
           console.log("Login failed: Incorrect password.");
@@ -57,14 +57,14 @@ app.post("/login", function (req, resp) {
   });
 });
 
-// register 
+//register 
 app.post("/register", (req, resp) => {
   const { username, password, email } = req.body;
   const saltRounds = 10;
 
   console.log(`Registering user: ${username}, Email: ${email}`);
 
-  // generate salt and hash password
+  //generate salt and hash password
   bcrypt.genSalt(saltRounds, (err, salt) => {
     if (err) {
       console.error("Error generating salt:", err);
