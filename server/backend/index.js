@@ -1,18 +1,21 @@
 const express = require("express");
 const mysql = require("mysql2");
+const bcrypt = require("bcrypt");
 
 const PORT = String(process.env.PORT);
 const HOST = String(process.env.HOST);
 const MYSQLHOST = String(process.env.MYSQLHOST);
 const MYSQLUSER = String(process.env.MYSQLUSER);
 const MYSQLPASS = String(process.env.MYSQLPASS);
+
 const SQL = "SELECT * FROM users;";
-const loginSQL = "SELECT * FROM users WHERE `username` = ? AND `password` = ?;";
+const loginSQL = "SELECT password FROM users WHERE username = ?;";
+const registerSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
 
 const app = express();
 app.use(express.json());
 
-// Create SQL connection and get params
+// Create SQL connection
 let connection = mysql.createConnection({
   host: MYSQLHOST,
   user: MYSQLUSER,
@@ -23,29 +26,72 @@ let connection = mysql.createConnection({
 // Startup; gets static files
 app.use("/", express.static("frontend"));
 
-// Login code; checks and salts username, returns true if match
+// Login endpoint
 app.post("/login", function (req, resp) {
   const { inputusername, inputpassword } = req.body;
-  console.log(`Username: ${inputusername}, Password: ${inputpassword}`);
+  console.log(`Username: ${inputusername}, Password: [hidden]`);
 
-  // Query SQL database and see if username/password is in there
-  connection.query(loginSQL, [inputusername, inputpassword], (error, results) => {
+  // Query SQL database for the hashed password
+  connection.query(loginSQL, [inputusername], (error, results) => {
     if (error) {
       console.error("Database error:", error.message);
       return resp.status(500).json({ success: false, message: "Database error" });
     }
 
     if (results.length > 0) {
-      console.log("Login successful.");
-      return resp.status(200).json({ success: true, message: "Login successful" });
+      const storedHash = results[0].password;
+
+      // Compare the provided password with the stored hash
+      bcrypt.compare(inputpassword, storedHash, (err, match) => {
+        if (err || !match) {
+          console.log("Login failed: Incorrect password.");
+          return resp.status(401).json({ success: false, message: "Incorrect username or password" });
+        }
+        console.log("Login successful.");
+        return resp.status(200).json({ success: true, message: "Login successful" });
+      });
     } else {
-      console.log("Login failed: Incorrect username or password.");
+      console.log("Login failed: Username not found.");
       return resp.status(401).json({ success: false, message: "Incorrect username or password" });
     }
   });
 });
 
-// This is the original query function
+// register 
+app.post("/register", (req, resp) => {
+  const { username, password, email } = req.body;
+  const saltRounds = 10;
+
+  console.log(`Registering user: ${username}, Email: ${email}`);
+
+  // generate salt and hash password
+  bcrypt.genSalt(saltRounds, (err, salt) => {
+    if (err) {
+      console.error("Error generating salt:", err);
+      return resp.status(500).json({ success: false, message: "Server error" });
+    }
+
+    bcrypt.hash(password, saltRounds, (err, hash) => {
+      if (err) {
+        console.error("Error hashing password:", err);
+        return resp.status(500).json({ success: false, message: "Server error" });
+      }
+
+      // Insert user into database
+      connection.query(registerSQL, [username, hash, email, salt], (error, results) => {
+        if (error) {
+          console.error("Database error:", error.message);
+          return resp.status(500).json({ success: false, message: "Database error" });
+        }
+
+        console.log(`User registered successfully: ${username}`);
+        return resp.status(201).json({ success: true, message: "User registered successfully" });
+      });
+    });
+  });
+});
+
+// query 
 app.get("/query", function (request, response) {
   connection.query(SQL, (error, results) => {
     if (error) {
