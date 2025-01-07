@@ -2,20 +2,20 @@
 <!-- TOTP after login page -->
 
 <html>
-    <link rel="shortcut icon" type="image/x-icon" href="favicon.png">
-	<link type="text/css" rel="stylesheet" href="common.css">
-	<script type="text/javascript" src="common.js"></script>
     <head>
-        <title>
-            Time-based-One-Time-Pad
-        </title>
+        <title>Time-based One-Time Password</title>
+        <link rel="shortcut icon" type="image/x-icon" href="favicon.png">
+        <link type="text/css" rel="stylesheet" href="common.css">
+        <script type="text/javascript" src="common.js" defer></script>
     </head>
 
     <body>
         <div class="content">
 
             <!-- TOTP entry -->
-            
+            <label for="totp">Enter your TOTP:</label>
+            <input type="text" id="totp" placeholder="Type TOTP here...">
+            <p id="message"></p>
 
             <!-- button to enter information -->
             <button class="button" onclick="submitTOTP()">Submit</button>
