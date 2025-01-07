@@ -70,3 +70,37 @@ function query() {
         console.log(err);
     })
 }
+
+// TOTP common.js function
+async function submitTOTP() {
+    const totpInput = document.getElementById('totp').value;
+    const messageElement = document.getElementById('message');
+
+    if (!totpInput) {
+        messageElement.textContent = 'Please enter your TOTP!';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/totp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ totp: totpInput }),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                messageElement.textContent = 'TOTP verified! Redirecting...';
+                setTimeout(() => window.location.href = '/query.html', 1000);
+            } else {
+                messageElement.textContent = 'Invalid TOTP. Please try again.';
+            }
+        } else {
+            throw new Error('Failed to verify TOTP');
+        }
+    } catch (error) {
+        messageElement.textContent = 'Error during TOTP verification.';
+        console.error(error);
+    }
+}
