@@ -15,7 +15,7 @@ CREATE TABLE users (
 INSERT INTO users
 VALUES(
     "user",
-    "$2b$12$z0ehqoz5OIC5L9WigMVEO.q6bBBsBq8tDWt.avpB2CQKerRNSnSq2",
+    "$2b$12$Ug39jSWbgweSFj9IuEnWW.c1/y35Y3eJ/jjR1489CT78XFq7W.Ha6",
     "user@example.com",
     "secretysecret"
 );

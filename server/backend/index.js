@@ -9,6 +9,7 @@ const HOST = String(process.env.HOST);
 const MYSQLHOST = String(process.env.MYSQLHOST);
 const MYSQLUSER = String(process.env.MYSQLUSER);
 const MYSQLPASS = String(process.env.MYSQLPASS);
+const PEPPER = String(process.env.PEPPER);
 
 //sql functions for later
 const SQL = "SELECT * FROM users;";
@@ -45,11 +46,9 @@ app.post("/login", function (req, resp) {
       return resp.status(500).send("database error");
     }
 
-    // return success if login data is found
     if (results.length > 0) {
-
-      // compare hashed password
-      bcrypt.compare(inputpassword, results[0].password)
+      // add pepper and compare hashed password
+      bcrypt.compare(inputpassword + PEPPER, results[0].password)
       .then(isMatch => {
 
         // if match, success, log user in
@@ -171,6 +170,7 @@ app.get("/query", function (request, response) {
     }
   });
 });
+
 
 app.listen(PORT, HOST);
 
