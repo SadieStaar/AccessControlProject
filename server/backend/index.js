@@ -1,7 +1,8 @@
 const express = require("express");
 const mysql = require("mysql2");
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcrypt');
 const speakeasy = require("speakeasy");
+
 
 const PORT = String(process.env.PORT);
 const HOST = String(process.env.HOST);
@@ -9,54 +10,74 @@ const MYSQLHOST = String(process.env.MYSQLHOST);
 const MYSQLUSER = String(process.env.MYSQLUSER);
 const MYSQLPASS = String(process.env.MYSQLPASS);
 
+//sql functions for later
 const SQL = "SELECT * FROM users;";
-const loginSQL = "SELECT password, totp_secret FROM users WHERE username = ?;";
+const loginSQL = "SELECT * FROM users WHERE `username` = ?;"
 const registerSQL = "INSERT INTO users (username, password, email, salt, totp_secret) VALUES (?, ?, ?, ?, ?)";
+
 
 const app = express();
 app.use(express.json());
 
-// Create SQL connection
+// create sql connection and get params
 let connection = mysql.createConnection({
   host: MYSQLHOST,
   user: MYSQLUSER,
   password: MYSQLPASS,
-  database: "users",
+  database: "users"
 });
 
-// Serve static files
+// startup; gets static files 
 app.use("/", express.static("frontend"));
 
-// Login
-app.post("/login", function (req, resp) {
-  const { inputusername, inputpassword } = req.body;
-  console.log(`Username: ${inputusername}, Password: [hidden]`);
 
-  connection.query(loginSQL, [inputusername], (error, results) => {
+// login code; checks and salts username, returns true if match
+app.post("/login", function (req, resp) {
+  // create variables for user inputted things
+  const {inputusername, inputpassword} = req.body;
+  console.log(inputusername, inputpassword)
+
+  // query sql database and see if username/password is in there
+  connection.query(loginSQL, [inputusername], (error, results) =>{
+    // error if something goes wrong in database
     if (error) {
-      console.error("Database error:", error.message);
-      return resp.status(500).json({ success: false, message: "Database error" });
+      console.error(error.message);
+      return resp.status(500).send("database error");
     }
 
+    // return success if login data is found
     if (results.length > 0) {
-      const storedHash = results[0].password;
-      const totpSecret = results[0].totp_secret;
 
-      bcrypt.compare(inputpassword, storedHash, (err, match) => {
-        if (err || !match) {
-          console.log("Login failed: Incorrect password.");
-          return resp.status(401).json({ success: false, message: "Incorrect username or password" });
+      // compare hashed password
+      bcrypt.compare(inputpassword, results[0].password)
+      .then(isMatch => {
+
+        // if match, success, log user in
+        if (isMatch) {
+          console.log(`User ${inputusername} logged in`);
+          return resp.status(200).json({success: true, message: "Login successful" });
         }
 
-        console.log("Password verified. Redirecting to TOTP...");
-        return resp.status(200).json({ success: true, message: "Password verified", totp_required: true });
+        // if not match, notify user
+        else {
+          console.log(`Password does not match`);
+          return resp.status(401).json({success: false, message: "Invalid password"});
+        }
+      })
+
+      // error during encryption phase
+      .catch(err => {
+        console.error('Error during comparison:', err);
       });
-    } else {
-      console.log("Login failed: Username not found.");
-      return resp.status(401).json({ success: false, message: "Incorrect username or password" });
     }
-  });
-});
+    // return failure if user is not found in database
+    else{
+      console.log("Information not found");
+      return resp.status(404).json({ success: false, message: "User not found" });
+    }
+  })
+})
+
 
 // TOTP verification
 app.post("/verify-totp", (req, resp) => {
@@ -91,6 +112,7 @@ app.post("/verify-totp", (req, resp) => {
     }
   });
 });
+
 
 // Registration
 app.post("/register", (req, resp) => {
@@ -134,12 +156,15 @@ app.post("/register", (req, resp) => {
   });
 });
 
-// Query
+
+// Query 
 app.get("/query", function (request, response) {
   connection.query(SQL, (error, results) => {
     if (error) {
       console.error("Database error:", error.message);
       response.status(500).send("Database error");
+      console.error(error.message);
+      response.status(500).send("database error");
     } else {
       console.log(results);
       response.status(200).send(results);

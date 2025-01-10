@@ -24,6 +24,7 @@ let connection = mysql.createConnection({
 app.use("/", express.static("frontend"));
 
 
+// original query function
 app.get("/query", function (request, response) {
   connection.query(SQL, [true], (error, results, fields) => {
     if (error) {

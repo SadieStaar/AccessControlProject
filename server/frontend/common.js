@@ -7,7 +7,6 @@ function tologinpage() {
     window.location.replace("login.html");
 }
 
-
 // LOGIN.HTML FUNCTION:
 
 // login: takes a username and password, passes into backend and returns result
@@ -29,9 +28,9 @@ function login() {
         .then((resp) => {
             if (resp.status === 200) {
                 // Login successful
-                console.log("Frontend redirecting to query...");
-                window.location.replace("query.html");
-            } else if (resp.status === 401) {
+                console.log("Frontend redirecting to TOTP...");
+                window.location.replace("totp.html");
+            } else if (resp.status === 404 || resp.status === 401) {
                 // Authentication failed
                 console.log("Resetting login page...");
                 document.getElementById("userinput").value = "";
@@ -48,10 +47,10 @@ function login() {
         // Error handler
         .catch((err) => {
             console.error("Network or unexpected error:", err);
+            console.error("Stack trace:", err.stack);
             alert("A network error occurred. Please check your connection and try again.");
         });
 }
-
 
 
 // QUERY.HTML FUNCTION
