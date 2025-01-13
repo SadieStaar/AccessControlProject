@@ -10,11 +10,11 @@ const MYSQLHOST = String(process.env.MYSQLHOST);
 const MYSQLUSER = String(process.env.MYSQLUSER);
 const MYSQLPASS = String(process.env.MYSQLPASS);
 const PEPPER = String(process.env.PEPPER);
+const TOTPSECRET = String(process.env.TOTPSECRET);
 
 //sql functions for later
 const SQL = "SELECT * FROM users;";
-const loginSQL = "SELECT * FROM users WHERE `username` = ?;"
-const registerSQL = "INSERT INTO users (username, password, email, salt, totp_secret) VALUES (?, ?, ?, ?, ?)";
+const loginSQL = "SELECT password, salt FROM users WHERE `username` = ?;"
 
 
 const app = express();
@@ -32,7 +32,7 @@ let connection = mysql.createConnection({
 app.use("/", express.static("frontend"));
 
 
-// login code; checks and salts username, returns true if match
+// login code; checks and salts/peppers username, returns true if match
 app.post("/login", function (req, resp) {
   // create variables for user inputted things
   const {inputusername, inputpassword} = req.body;
@@ -47,8 +47,8 @@ app.post("/login", function (req, resp) {
     }
 
     if (results.length > 0) {
-      // add pepper and compare hashed password
-      bcrypt.compare(inputpassword + PEPPER, results[0].password)
+      // add salt/pepper and compare hashed password
+      bcrypt.compare(results[0].salt + inputpassword + PEPPER, results[0].password)
       .then(isMatch => {
 
         // if match, success, log user in
@@ -79,10 +79,12 @@ app.post("/login", function (req, resp) {
 
 
 // TOTP verification
-app.post("/verify-totp", (req, resp) => {
-  const { username, totp_code } = req.body;
+app.post("/totp", (req, resp) => {
+  // get code
+  const inputTotp = req.body;
+  console.log(inputTotp);
 
-  connection.query("SELECT totp_secret FROM users WHERE username = ?", [username], (error, results) => {
+  // previous code
     if (error) {
       console.error("Database error:", error.message);
       return resp.status(500).json({ success: false, message: "Database error" });
@@ -94,7 +96,7 @@ app.post("/verify-totp", (req, resp) => {
       const verified = speakeasy.totp.verify({
         secret: totpSecret,
         encoding: "base32",
-        token: totp_code,
+        token: inputTotp,
         window: 1, // Allow for slight time drift
       });
 
@@ -110,7 +112,7 @@ app.post("/verify-totp", (req, resp) => {
       return resp.status(404).json({ success: false, message: "User not found" });
     }
   });
-});
+// });
 
 
 // Registration

@@ -1,16 +1,16 @@
 var parsedUrl = new URL(window.location.href);
 
-// HOME PAGE FUNCTIONS:
-
 // tologinpage: redirects user to the login page login.html
 function tologinpage() {
     window.location.replace("login.html");
 }
 
-// LOGIN.HTML FUNCTION:
+// toregistrationpage: redirects user to the registration page registration.html
+function toregistrationpage() {
+    alert("Function not supported yet, try again later.");
+}
 
-// login: takes a username and password, passes into backend and returns result
-//  will reroute successful matches to query page
+// login function: take username and password, send to backend
 function login() {
     // Get entered username and password
     const inputusername = document.getElementById("userinput").value;
@@ -52,8 +52,53 @@ function login() {
         });
 }
 
+// totp function: take totp code, send to backend
+function submitTOTP() {
+    const totpInput = document.getElementById('totp').value;
 
-// QUERY.HTML FUNCTION
+    console.log(`recieved: ${totpInput}`);
+
+    // make sure user enters something
+    if (!totpInput) {
+        alert('Enter the 6 TOTP numbers in the textbox.');
+        return;
+    }
+    
+    // send to the backend for processing
+    fetch("http://" + parsedUrl.host + "/totp", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({totpInput}),
+    })
+
+    // check for errors
+    .then((response) => {
+        if (!response.ok) {
+            throw new Error(`HTTP error: status: ${response.status}`);
+        }
+        return response.json();
+    })
+
+    // parse and act on data from backend
+    .then((data) => {
+        if (data.success) { // 200: request good
+            console.log("TOTP verified. Redirecting to Query page...");
+            window.location.replace("query.html");
+        }
+        else {
+            console.log("How did we get here?");
+        }
+    })
+    
+    // error handler if frontend parsing fails
+    .catch((err) => {
+        alert("An error occured while processing the request.");
+        console.error("Unexpected error occured:", err);
+        console.error("Stack trace:", err.stack);
+    });
+}
 
 // query: the original function from the forked repo
 function query() {
@@ -68,38 +113,4 @@ function query() {
     .catch((err) => {
         console.log(err);
     })
-}
-
-// TOTP common.js function
-async function submitTOTP() {
-    const totpInput = document.getElementById('totp').value;
-    const messageElement = document.getElementById('message');
-
-    if (!totpInput) {
-        messageElement.textContent = 'Please enter your TOTP!';
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/totp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ totp: totpInput }),
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                messageElement.textContent = 'TOTP verified! Redirecting...';
-                setTimeout(() => window.location.href = '/query.html', 1000);
-            } else {
-                messageElement.textContent = 'Invalid TOTP. Please try again.';
-            }
-        } else {
-            throw new Error('Failed to verify TOTP');
-        }
-    } catch (error) {
-        messageElement.textContent = 'Error during TOTP verification.';
-        console.error(error);
-    }
 }

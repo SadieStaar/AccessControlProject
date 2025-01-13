@@ -6,16 +6,15 @@ CREATE TABLE users (
     username VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     email    VARCHAR(255) NOT NULL,
-    totp_secret VARCHAR(255) NOT NULL,
+    salt     VARCHAR(255) NOT NULL,
     PRIMARY KEY (username)
 );
 
--- Generates hex value for the salt
 
 INSERT INTO users
 VALUES(
     "user",
-    "$2b$12$Ug39jSWbgweSFj9IuEnWW.c1/y35Y3eJ/jjR1489CT78XFq7W.Ha6",
+    "$2b$10$31z3yI8coig/3nE8ae16UOWir18T2b3VC.PiAx9zPcuM8mkj6sjaa",
     "user@example.com",
-    "secretysecret"
+    "abc1"
 );
