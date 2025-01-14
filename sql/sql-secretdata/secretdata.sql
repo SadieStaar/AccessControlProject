@@ -1,16 +1,16 @@
-CREATE DATABASE data;
+CREATE DATABASE secretdata;
 
-use data;
+use secretdata;
 
-CREATE TABLE data (
+CREATE TABLE secretdata (
     username VARCHAR(255) NOT NULL,
     info     VARCHAR(255) NOT NULL,
     PRIMARY KEY (username)
 );
 
 
-INSERT INTO data
+INSERT INTO secretdata
 VALUES(
     "user",
-    "secrety usery data"
+    "secret user data"
 );
