@@ -1,47 +1,47 @@
 version: '3'
 services:
 # ~~~~ user server setup ~~~~ #
-  # mysql-users:
-  #   image: mysql
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=example
-  #   volumes:
-  #     - ./sql/sql-users:/docker-entrypoint-initdb.d/
+  mysql-users:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=example
+    volumes:
+      - ./sql/sql-users:/docker-entrypoint-initdb.d/
 
-  # server-users:
-  #   build: ./servers/server-users
-  #   environment:
-  #     - HOST=0.0.0.0
-  #     - PORT=80
-  #     - MYSQLHOST=mysql-users
-  #     - MYSQLUSER=root
-  #     - MYSQLPASS=example
-  #     - PEPPER=802A
-  #     - TOTPSECRET=secretysecret
-  #     - JWTSECRET=othersecretysecret
-  #   volumes:
-  #     - ./servers/server-users/backend-users:/app/backend
-  #   ports:
-  #     - "8001:80"
+  server-users:
+    build: ./servers/server-users
+    environment:
+      - HOST=0.0.0.0
+      - PORT=80
+      - MYSQLHOST=mysql-users
+      - MYSQLUSER=root
+      - MYSQLPASS=example
+      - PEPPER=802A
+      - TOTPSECRET=secretysecret
+      - JWTSECRET=othersecretysecret
+    volumes:
+      - ./servers/server-users/backend-users:/app/backend-users
+    ports:
+      - "8001:80"
 
 # ~~~~ data server setup ~~~~ #
-  mysql-secretdata:
+  mysql-quack:
     image: mysql
     environment:
     - MYSQL_ROOT_PASSWORD=example
     volumes:
-    - ./sql/sql-secretdata:/docker-entrypoint-initds.d/
+    - ./sql/sql-quack:/docker-entrypoint-initdb.d/
 
   server-data:
     build: ./servers/server-data
     environment:
       - HOST=0.0.0.0
       - PORT=80
-      - MYSQLHOST=mysql-secretdata
+      - MYSQLHOST=mysql-quack
       - MYSQLUSER=root
       - MYSQLPASS=example
     volumes:
-      - ./servers/server-data/backend-data:/app/backend
-      - ./servers/server-data/frontend-data:/app/frontend
+      - ./servers/server-data/backend-data:/app/backend-data
+      - ./servers/server-data/frontend-data:/app/frontend-data
     ports:
-      - "8000:80"
+      - "80"
