@@ -1,15 +1,15 @@
-CREATE DATABASE secretdata;
+CREATE database quack;
 
-use secretdata;
+use quack;
 
-CREATE TABLE secretdata (
+CREATE TABLE quack (
     username VARCHAR(255) NOT NULL,
     info     VARCHAR(255) NOT NULL,
     PRIMARY KEY (username)
 );
 
 
-INSERT INTO secretdata
+INSERT INTO quack
 VALUES(
     "user",
     "secret user data"

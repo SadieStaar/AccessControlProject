@@ -10,7 +10,7 @@ const MYSQLUSER = String(process.env.MYSQLUSER);
 const MYSQLPASS = String(process.env.MYSQLPASS);
 
 //sql functions for later
-const SQL = "SELECT * FROM secretdata;";
+const SQL = "SELECT * FROM quack;";
 
 
 const app = express();
@@ -21,11 +21,11 @@ let connection = mysql.createConnection({
   host: MYSQLHOST,
   user: MYSQLUSER,
   password: MYSQLPASS,
-  database: "secretdata"
+  database: "quack"
 });
 
 // startup; gets static files 
-app.use("/", express.static("frontend"));
+app.use("/", express.static("frontend-data"));
 
 
 // Query 
@@ -50,3 +50,4 @@ app.get("/query", function (request, response) {
 // listen for requests
 app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);
+
