@@ -15,14 +15,22 @@ const MYSQLPASS = String(process.env.MYSQLPASS);
 const PEPPER = String(process.env.PEPPER);
 const TOTPSECRET = String(process.env.TOTPSECRET);
 const JWTSECRET = String(process.env.JWTSECRET);
+const SALTROUNDS = 10;
 
-// sql functions for later
+// needed sql functions
 const loginSQL = "SELECT password, salt FROM users WHERE `username` = ?;"
+const REGISTERSQL = 'INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)'
 
-
-// get express working
+// get express and cors working
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost");  // Allow any origin (or specify a specific origin like http://localhost)
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");  // If you're using cookies or auth headers
+  next();
+});
 
 
 // create sql connection and get params
@@ -34,7 +42,44 @@ let connection = mysql.createConnection({
 });
 
 
-// login code; checks and salts/peppers username, returns true if match
+// registration
+app.post("/register", (req, resp) => {
+  let { username, email, password } = req.body;
+
+  bcrypt.genSalt(SALTROUNDS, (err, salt) => {
+    if (err) {
+      console.error("Error generating salt:", err);
+      return resp.status(500).send("Error generating salt");
+    }
+
+    bcrypt.hash(salt + password + PEPPER, SALTROUNDS, (err, hash) => {
+      if (err) {
+        console.error("Error hashing password:", err);
+        return resp.status(500).send("Error generating hash");
+      }
+
+      console.log(`${username}, ${email}, ${hash}, ${salt}`);
+
+      connection.query(REGISTERSQL, [username, hash, email, salt], (error, results) => {
+          if (error) {
+            if (error.code === 'ER_DUP_ENTRY'){
+              console.error("User already in database");
+              return resp.status(409).send("User already exists");
+            }
+            console.error("Database error:", error.message);
+            return resp.status(500).send("Database error");          
+          }
+
+          // user successfully registered
+          console.log(`User registered successfully: ${username}`);
+          return resp.status(201).send("Registration successful");
+        });
+    });
+  });
+});
+
+
+// login
 app.post("/login", function (req, resp) {
   // create variables for user inputted things
   const {inputusername, inputpassword} = req.body;
@@ -47,6 +92,7 @@ app.post("/login", function (req, resp) {
       console.error(error.message);
       return resp.status(500).send("database error");
     }
+    console.log(results);
 
     if (results.length > 0) {
       // add salt/pepper and compare hashed password
@@ -62,7 +108,7 @@ app.post("/login", function (req, resp) {
         // if not match, notify user
         else {
           console.log(`Password does not match`);
-          return resp.status(401).json({success: false, message: "Invalid password"});
+          return resp.status(401);
         }
       })
 
@@ -74,7 +120,7 @@ app.post("/login", function (req, resp) {
     // return failure if user is not found in database
     else{
       console.log("Information not found");
-      return resp.status(404).json({ success: false, message: "User not found" });
+      return resp.status(404);
     }
   })
 })
@@ -86,10 +132,8 @@ app.post("/totp", (req, resp) => {
   const inputTotp = req.body;
   console.log(inputTotp);
 
-  if (!parsedBody.hasOwnProperty('totp')) {
-    console.log("Incomplete request");
-    response.status(415).send("Incomplete Request");
-  }
+  // WIP return for testing purposes, remove when totp is done //
+  return resp.status(200).json({success: true, message: "Login successful" });
 
   // get timestamp
   const timestamp = Math.round(Date.now() / 1000 / 30);
@@ -136,50 +180,6 @@ app.post("/totp", (req, resp) => {
       console.log("User not found.");
       return resp.status(404).json({ success: false, message: "User not found" });
     }
-  });
-// });
-
-
-// Registration
-app.post("/register", (req, resp) => {
-  const { username, password, email } = req.body;
-  const saltRounds = 10;
-
-  console.log(`Registering user: ${username}, Email: ${email}`);
-
-  const totpSecret = speakeasy.generateSecret({ length: 20 });
-
-  bcrypt.genSalt(saltRounds, (err, salt) => {
-    if (err) {
-      console.error("Error generating salt:", err);
-      return resp.status(500).json({ success: false, message: "Server error" });
-    }
-
-    bcrypt.hash(password, saltRounds, (err, hash) => {
-      if (err) {
-        console.error("Error hashing password:", err);
-        return resp.status(500).json({ success: false, message: "Server error" });
-      }
-
-      connection.query(
-        registerSQL,
-        [username, hash, email, salt, totpSecret.base32],
-        (error, results) => {
-          if (error) {
-            console.error("Database error:", error.message);
-            return resp.status(500).json({ success: false, message: "Database error" });
-          }
-
-          console.log(`User registered successfully: ${username}`);
-          resp.status(201).json({
-            success: true,
-            message: "User registered successfully",
-            totp_secret: totpSecret.otpauth_url, //use this for QR code generation
-          });
-        }
-      );
-    });
-  });
 });
 
 
@@ -187,6 +187,7 @@ app.post("/verifyJWT", function (request, response) {
   //verify the token is current and was made by this server
   return;
 })
+
 app.listen(PORT, HOST);
 
 console.log(`Running on http://${HOST}:${PORT}`);

@@ -1,5 +1,5 @@
 {
-    "name": "user-backend",
+    "name": "backend",
     "version": "0.0.1",
     "scripts": {
         "start": "nodemon ./backend-users/index.js"
@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "express": "4.18.2",
+        "cors": "2.8.5",
         "mysql2": "2.3.3",
         "bcrypt": "5.1.1",
         "crypto": "1.0.1",

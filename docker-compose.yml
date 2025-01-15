@@ -12,7 +12,7 @@ services:
     build: ./servers/server-users
     environment:
       - HOST=0.0.0.0
-      - PORT=80
+      - PORT=8001
       - MYSQLHOST=mysql-users
       - MYSQLUSER=root
       - MYSQLPASS=example
@@ -22,7 +22,7 @@ services:
     volumes:
       - ./servers/server-users/backend-users:/app/backend-users
     ports:
-      - "8001:80"
+      - "8001:8001"
 
 # ~~~~ data server setup ~~~~ #
   mysql-quack:
@@ -44,4 +44,4 @@ services:
       - ./servers/server-data/backend-data:/app/backend-data
       - ./servers/server-data/frontend-data:/app/frontend-data
     ports:
-      - "80"
+      - "80:80"
