@@ -136,7 +136,7 @@ app.post("/totp", function (req, resp) => {
   return resp.status(200).json({success: true, message: "Login successful" });
 
   // get timestamp
-  /*
+  
   // code from class
   const hmac = createHmac('sha256', 'secretcode');
 
@@ -156,7 +156,8 @@ app.post("/totp", function (req, resp) => {
   } else {
     response status(401).send("Code comparison failed");
   }
-  */
+  
+  /*
   const timestamp = Math.round(Date.now() / 1000 / 30);
   console.log(`timestamp: ${timestamp}`);
 
@@ -172,7 +173,7 @@ app.post("/totp", function (req, resp) => {
       console.error("Database error:", error.message);
       return resp.status(500).json({ success: false, message: "Database error" });
     }
-
+    */
     if (results.length > 0) {
       const totpSecret = results[0].totp_secret;
 
