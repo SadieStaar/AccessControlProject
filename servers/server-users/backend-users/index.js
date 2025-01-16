@@ -127,13 +127,13 @@ app.post("/login", function (req, resp) {
 
 
 // TOTP verification
-app.post("/totp", function (req, resp) => {
+app.post("/totp", function (req, resp) {
   // get entered totp code
   const inputTotp = req.body;
   console.log(inputTotp);
 
   // WIP return for testing purposes, remove when totp is done //
-  return resp.status(200).json({success: true, message: "Login successful" });
+  //return resp.status(200).json({success: true, message: "Login successful" });
 
   // get timestamp
   
@@ -152,9 +152,9 @@ app.post("/totp", function (req, resp) => {
   let result = hmac.digest('hex').match(numberPattern).join('').slice(-6)
   console.log(result);
   if (inputTotp["totp"] === result) {
-    response.status(200).send("Code verification successful");
+    resp.status(200).send("Code verification successful");
   } else {
-    response status(401).send("Code comparison failed");
+    resp.status(401).send("Code comparison failed");
   }
   
   /*
@@ -173,7 +173,7 @@ app.post("/totp", function (req, resp) => {
       console.error("Database error:", error.message);
       return resp.status(500).json({ success: false, message: "Database error" });
     }
-    */
+    
     if (results.length > 0) {
       const totpSecret = results[0].totp_secret;
 
@@ -201,7 +201,7 @@ app.post("/totp", function (req, resp) => {
     else {
       console.log("User not found.");
       return resp.status(404).json({ success: false, message: "User not found" });
-    }
+    }*/
 });
 
 
