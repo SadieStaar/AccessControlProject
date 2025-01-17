@@ -45,3 +45,11 @@ services:
       - ./servers/server-data/frontend-data:/app/frontend-data
     ports:
       - "80:80"
+
+# ~~~ TOTP authenticator ~~~~ #
+  authenticator:
+    build: ./authenticator
+    environment:
+    - TOTPSECRET=secretysecret
+    volumes: 
+    - ./authenticator:/app

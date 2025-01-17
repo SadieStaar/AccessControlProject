@@ -135,73 +135,18 @@ app.post("/totp", function (req, resp) {
   // WIP return for testing purposes, remove when totp is done //
   //return resp.status(200).json({success: true, message: "Login successful" });
 
-  // get timestamp
-  
-  // code from class
-  const hmac = createHmac('sha256', 'secretcode');
-
-  // still need to round to 30 seconds
+  //generate hash
+  const hmac = crypto.createHmac('sha256', TOTPSECRET);
   const timestamp = Math.floor(Date.now() / 1000 / 30);
-  timestamp.setSeconds(30);
-  timestamp.setMilliseconds(0);
-  console.log(timestamp);
+  hmac.update(Buffer.from(timestamp.toString()));
+  let result = hmac.digest('hex').replace(/\D/g, '').slice(0, 6);
 
-  hmac.update(timestamp.toString());
-
-  let numberPattern = /\d+/g;
-  let result = hmac.digest('hex').match(numberPattern).join('').slice(-6)
-  console.log(result);
-  if (inputTotp["totp"] === result) {
+  // check if match
+  if (inputTotp['totpInput'] === result) {
     resp.status(200).send("Code verification successful");
   } else {
     resp.status(401).send("Code comparison failed");
   }
-  
-  /*
-  const timestamp = Math.round(Date.now() / 1000 / 30);
-  console.log(`timestamp: ${timestamp}`);
-
-  const hmac = crypto.createHmac('sha256', TOTPSECRET);
-
-  hmac.update(ArrayBuffer.from(timestamp.toString()));
-  let hash = hmac.digest('hex').replace(/\D/g, "").slice(0, 6);
-  console.log(`totp code: ${hash}`);
-
-  hmac
-  // previous code
-    if (error) {
-      console.error("Database error:", error.message);
-      return resp.status(500).json({ success: false, message: "Database error" });
-    }
-    
-    if (results.length > 0) {
-      const totpSecret = results[0].totp_secret;
-
-      const verified = speakeasy.totp.verify({
-        secret: totpSecret,
-        encoding: "base32",
-        token: inputTotp,
-        window: 1, // Allow for slight time drift
-      });
-
-      if (verified) {
-        // change this to sending the JWT
-        let userdata = "SELECT * FROM users WHERE username=" + parsedBody["username"] + ";";
-        let JWT = jwt.sign(userdata, JWTSECRET);
-        console.log("TOTP verification successful.");
-        return resp.status(200).send(JWT);
-      } 
-      
-      else {
-        console.log("TOTP verification failed.");
-        return resp.status(401).json({ success: false, message: "Invalid TOTP code" });
-      }
-    } 
-    
-    else {
-      console.log("User not found.");
-      return resp.status(404).json({ success: false, message: "User not found" });
-    }*/
 });
 
 
