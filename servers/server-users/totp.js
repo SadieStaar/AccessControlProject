@@ -27,4 +27,4 @@ app.post("/totp", function (req, resp) {
     resp.status(200).send("Code verification successful");
   } else {
     resp.status(401).send("Code comparison failed");
-  }}};
+  }});

@@ -5,6 +5,7 @@ services:
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=example
+      - MYSQL_ROOT_HOST=%
     volumes:
       - ./sql/sql-users:/docker-entrypoint-initdb.d/
 
@@ -13,7 +14,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8001
-      - MYSQLHOST=mysql-users
+      - MYSQLHOST=mysql-users # was msql-users, I am setting to % for debugging
       - MYSQLUSER=root
       - MYSQLPASS=example
       - PEPPER=802A
