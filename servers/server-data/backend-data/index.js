@@ -1,17 +1,19 @@
 // requirements
 const express = require("express");
 const mysql = require("mysql2");
+const jwt = require("jsonwebtoken"); // Import JWT library
+require("dotenv").config(); // Load environment variables
 
 // global variables
-const PORT = String(process.env.PORT);
-const HOST = String(process.env.HOST);
-const MYSQLHOST = String(process.env.MYSQLHOST);
-const MYSQLUSER = String(process.env.MYSQLUSER);
-const MYSQLPASS = String(process.env.MYSQLPASS);
+const PORT = String(process.env.PORT || 8001);
+const HOST = String(process.env.HOST || "localhost");
+const MYSQLHOST = String(process.env.MYSQLHOST || "localhost");
+const MYSQLUSER = String(process.env.MYSQLUSER || "root");
+const MYSQLPASS = String(process.env.MYSQLPASS || "");
+const JWTSECRET = String(process.env.JWTSECRET || "your_secret_key");
 
-//sql functions for later
+// SQL query to execute
 const SQL = "SELECT * FROM quack;";
-
 
 const app = express();
 app.use(express.json());
@@ -21,33 +23,43 @@ let connection = mysql.createConnection({
   host: MYSQLHOST,
   user: MYSQLUSER,
   password: MYSQLPASS,
-  database: "quack"
+  database: "quack",
 });
 
-// startup; gets static files 
+// startup; gets static files
 app.use("/", express.static("frontend-data"));
 
-
-// Query 
+// Query with JWT validation
 app.get("/query", function (request, response) {
-  // get token from header
-  // send token to user server for verification
-  // if success:
-  connection.query(SQL, (error, results) => {
-    if (error) {
-      console.error("Database error:", error.message);
-      response.status(500).send("Database error");
-      console.error(error.message);
-      response.status(500).send("database error");
-    } else {
-      console.log(results);
-      response.status(200).send(results);
-    }
-    // else, send 401 w/ message: token invalid/expired
-  });
+  const authHeader = request.headers.authorization;
+
+  // Check if the Authorization header exists and contains a token
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return response.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1]; // Extract the token from the header
+
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, JWTSECRET);
+    console.log("Token is valid. User:", decoded); // Log decoded token info for debugging
+
+    // If token is valid, execute the SQL query
+    connection.query(SQL, (error, results) => {
+      if (error) {
+        console.error("Database error:", error.message);
+        return response.status(500).json({ message: "Database error" });
+      }
+      response.status(200).json(results); // Return query results
+    });
+  } catch (err) {
+    console.error("Invalid or expired token:", err.message);
+    response.status(401).json({ message: "Unauthorized: Invalid or expired token" });
+  }
 });
 
-// listen for requests
-app.listen(PORT, HOST);
-console.log(`Running on http://${HOST}:${PORT}`);
-
+// Listen for requests
+app.listen(PORT, HOST, () => {
+  console.log(`Running on http://${HOST}:${PORT}`);
+});
