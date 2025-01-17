@@ -2,6 +2,7 @@
 const express = require("express");
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken"); // Import JWT library
+const fetch = require("node-fetch"); // Import fetch for HTTP requests
 require("dotenv").config(); // Load environment variables
 
 // global variables
@@ -29,8 +30,8 @@ let connection = mysql.createConnection({
 // startup; gets static files
 app.use("/", express.static("frontend-data"));
 
-// Query with JWT validation
-app.get("/query", function (request, response) {
+// Query with external token validation
+app.get("/query", async function (request, response) {
   const authHeader = request.headers.authorization;
 
   // Check if the Authorization header exists and contains a token
@@ -41,9 +42,23 @@ app.get("/query", function (request, response) {
   const token = authHeader.split(" ")[1]; // Extract the token from the header
 
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, JWTSECRET);
-    console.log("Token is valid. User:", decoded); // Log decoded token info for debugging
+    // Validate the token with the User Management API
+    const validationResponse = await fetch("http://localhost:5002/validateToken", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Handle validation response
+    if (!validationResponse.ok) {
+      const error = await validationResponse.text();
+      return response.status(401).json({ message: `Unauthorized: ${error}` });
+    }
+
+    const validationData = await validationResponse.json();
+    console.log("Token validated successfully:", validationData); // Debugging
 
     // If token is valid, execute the SQL query
     connection.query(SQL, (error, results) => {
@@ -54,8 +69,8 @@ app.get("/query", function (request, response) {
       response.status(200).json(results); // Return query results
     });
   } catch (err) {
-    console.error("Invalid or expired token:", err.message);
-    response.status(401).json({ message: "Unauthorized: Invalid or expired token" });
+    console.error("Error validating token:", err.message);
+    response.status(500).json({ message: "Error validating token" });
   }
 });
 
