@@ -10,6 +10,14 @@ function toregistrationpage() {
     window.location.replace("register.html");
 }
 
+// Function to retrieve a cookie by name
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+
 //register: take username, email, and password, send to backend
 function register() {
     // get values and check if password matches check
@@ -73,10 +81,23 @@ function login() {
         body: JSON.stringify({ inputusername, inputpassword }),
     })
     // handle response
-    .then((data) => {
+    .then(async (data) => {
         switch(data.status) {
             case 200:  //successful login
                 console.log("Frontend redirecting to TOTP...");
+                try {
+                    const response = await data.json(); // Parse response body to get token
+                    const token = response.token;
+                    if (token) {
+                        // Store the token as a cookie
+                        document.cookie = `token=${token}; Path=/; HttpOnly; SameSite=Strict`;
+                        console.log("JWT stored as cookie.");
+                    } else {
+                        console.error("No token received in response.");
+                    }
+                } catch (err) {
+                    console.error("Failed to parse response body:", err);
+                }
                 window.location.replace("totp.html");
                 return; // we're done here, leave
             case 401:  //password does not match
@@ -150,15 +171,35 @@ function submitTOTP() {
 
 // query: the original function from the forked repo
 function query() {
+    const token = getCookie('token'); // Retrieve the JWT token
+
+    if (!token) {
+        alert("You are not logged in. Please log in first.");
+        window.location.replace("login.html");
+        return;
+    }
+
     fetch("http://" + parsedUrl.host + "/query", {
         method: "GET",
-        mode: "no-cors",
+        headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+        },
     })
-    .then((resp) => resp.text())
+    .then((resp) => {
+        if (resp.ok) {
+            return resp.text();
+        } else if (resp.status === 401) {
+            alert("Unauthorized access. Please log in again.");
+            window.location.replace("login.html");
+        } else {
+            throw new Error("Failed to fetch data");
+        }
+    })
     .then((data) => {
         document.getElementById("response").innerHTML = data;
     })
     .catch((err) => {
-        console.log(err);
-    })
+        console.error("Query error:", err.message);
+        alert("Failed to fetch data. Please try again.");
+    });
 }
