@@ -90,13 +90,15 @@ The **Access Control Project** is a multi-container application demonstrating us
 ## How to Run
 1. **Build and Start** all containers:
    ```bash
-- **Access** the frontend at [http://localhost](http://localhost) (port 80).  
-- **Register** at [http://localhost/register.html](http://localhost/register.html).  
-- **Login** at [http://localhost/login.html](http://localhost/login.html).  
+   docker-compose build
+   docker-compose up
+2. **Access** the frontend at [http://localhost](http://localhost) (port 80).  
+3. **Register** at [http://localhost/register.html](http://localhost/register.html).  
+4. **Login** at [http://localhost/login.html](http://localhost/login.html).  
   - On success, a JWT is returned and stored in a cookie.  
-- **TOTP** at [http://localhost/totp.html](http://localhost/totp.html).  
+5. **TOTP** at [http://localhost/totp.html](http://localhost/totp.html).  
   - Enter the 6-digit code from the authenticator container (or your own TOTP script).  
-- **Query** at [http://localhost/query.html](http://localhost/query.html).  
+6. **Query** at [http://localhost/query.html](http://localhost/query.html).  
   - If the JWT is valid, you’ll see data from the “quack” DB.
 
 ---
