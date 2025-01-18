@@ -1,6 +1,6 @@
 version: '3'
 services:
-# ~~~~ user server setup ~~~~ #
+  # ~~~~ user server setup ~~~~ #
   mysql-users:
     image: mysql
     environment:
@@ -9,29 +9,31 @@ services:
     volumes:
       - ./sql/sql-users:/docker-entrypoint-initdb.d/
 
-  server-users:
-    build: ./servers/server-users
+  user-management-api:
+    build: ./user-management-api
     environment:
       - HOST=0.0.0.0
-      - PORT=8001
-      - MYSQLHOST=mysql-users # was msql-users, I am setting to % for debugging
+      - PORT=5002
+      - MYSQLHOST=mysql-users
       - MYSQLUSER=root
       - MYSQLPASS=example
       - PEPPER=802A
       - TOTPSECRET=secretysecret
       - JWTSECRET=othersecretysecret
-    volumes:
-      - ./servers/server-users/backend-users:/app/backend-users
+    #volumes:
+      #- ./user-management-api:/app
     ports:
-      - "8001:8001"
+      - "5002:5002"
+    depends_on:
+      - mysql-users
 
-# ~~~~ data server setup ~~~~ #
+  # ~~~~ data server setup ~~~~ #
   mysql-quack:
     image: mysql
     environment:
-    - MYSQL_ROOT_PASSWORD=example
+      - MYSQL_ROOT_PASSWORD=example
     volumes:
-    - ./sql/sql-quack:/docker-entrypoint-initdb.d/
+      - ./sql/sql-quack:/docker-entrypoint-initdb.d/
 
   server-data:
     build: ./servers/server-data
@@ -46,11 +48,13 @@ services:
       - ./servers/server-data/frontend-data:/app/frontend-data
     ports:
       - "80:80"
+    depends_on:
+      - mysql-quack
 
-# ~~~ TOTP authenticator ~~~~ #
+  # ~~~ TOTP authenticator ~~~~ #
   authenticator:
     build: ./authenticator
     environment:
-    - TOTPSECRET=secretysecret
-    volumes: 
-    - ./authenticator:/app
+      - TOTPSECRET=secretysecret
+    volumes:
+      - ./authenticator:/app

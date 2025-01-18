@@ -1,8 +1,10 @@
 const express = require("express");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const cors = require("cors");
 
 // Load environment variables
 dotenv.config();
@@ -10,83 +12,162 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+app.use(cors({
+    origin: "http://localhost",  // or "*" in dev if you prefer
+    methods: ["GET", "POST"],
+    credentials: true
+  }));
+  
+  app.use(express.json());
+
+// ENV variables
+const HOST = process.env.HOST || "0.0.0.0";
 const PORT = process.env.PORT || 5002;
+const MYSQLHOST = process.env.MYSQLHOST || "localhost";
+const MYSQLUSER = process.env.MYSQLUSER || "root";
+const MYSQLPASS = process.env.MYSQLPASS || "rootpassword";
+const PEPPER = process.env.PEPPER || "802A";
+const TOTPSECRET = process.env.TOTPSECRET || "secretysecret";
 const JWTSECRET = process.env.JWTSECRET || "your-secret-key";
 const SALTROUNDS = 10;
 
-// MySQL connection
+// Create MySQL connection
 const connection = mysql.createConnection({
-    host: process.env.MYSQLHOST || "localhost",
-    user: process.env.MYSQLUSER || "root",
-    password: process.env.MYSQLPASS || "rootpassword",
-    database: "users",
+    host: MYSQLHOST,
+    user: MYSQLUSER,
+    password: MYSQLPASS,
+    database: "users",  // Make sure this DB exists inside your docker container
 });
 
-app.post("/login", (req, res) => {
-    const { username, password, totp } = req.body;
+// SQL statements
+const REGISTERSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
+const LOGINSQL = "SELECT password, salt, email FROM users WHERE username = ?";
 
-    // Validate username and password
-    connection.query("SELECT * FROM users WHERE username = ?", [username], (err, results) => {
-        if (err) return res.status(500).send("Database error");
-        if (results.length === 0) return res.status(404).send("User not found");
+// ------------------ Registration ------------------ //
+app.post("/register", (req, res) => {
+    const { username, email, password } = req.body;
 
-        const user = results[0];
+    // Generate a new salt and hash with pepper
+    bcrypt.genSalt(SALTROUNDS, (err, salt) => {
+        if (err) {
+            console.error("Error generating salt:", err);
+            return res.status(500).send("Error generating salt");
+        }
 
-        bcrypt.compare(password, user.password, (err, match) => {
-            if (err) return res.status(500).send("Error comparing passwords");
-            if (!match) return res.status(401).send("Invalid credentials");
+        // Combine salt + password + PEPPER, then hash
+        bcrypt.hash(salt + password + PEPPER, SALTROUNDS, (err, hash) => {
+            if (err) {
+                console.error("Error hashing password:", err);
+                return res.status(500).send("Error generating hash");
+            }
 
-            // Validate TOTP (replace with your TOTP logic)
-            const expectedTotp = "123456"; // Replace with actual TOTP generation/verification logic
-            if (totp !== expectedTotp) return res.status(401).send("Invalid TOTP code");
+            // Store user in DB
+            connection.query(REGISTERSQL, [username, hash, email, salt], (error, results) => {
+                if (error) {
+                    if (error.code === "ER_DUP_ENTRY") {
+                        console.error("User already in database");
+                        return res.status(409).send("User already exists");
+                    }
+                    console.error("Database error:", error.message);
+                    return res.status(500).send("Database error");
+                }
 
-            // Generate JWT
-            const token = jwt.sign(
-                { email: user.email, username: user.username },
-                JWTSECRET,
-                { expiresIn: "1h" }
-            );
-
-            res.status(200).json({ token });
+                console.log(`User registered successfully: ${username}`);
+                return res.status(201).send("Registration successful");
+            });
         });
     });
 });
 
+// ------------------ Login ------------------ //
+app.post("/login", (req, res) => {
+    // Frontend sends {inputusername, inputpassword}
+    const { inputusername, inputpassword } = req.body;
+    console.log(`Login attempt for user: ${inputusername}`);
 
-// TOTP verification route
+    connection.query(LOGINSQL, [inputusername], (error, results) => {
+        if (error) {
+            console.error("Database error:", error.message);
+            return res.status(500).send("Database error");
+        }
+        if (results.length === 0) {
+            console.log("User not found in database");
+            return res.status(404).send("User not found");
+        }
+
+        // Extract hashed password and salt from DB
+        const dbHash = results[0].password;
+        const dbSalt = results[0].salt;
+        const dbEmail = results[0].email;
+
+        // Compare the combination of salt + user input + pepper to the stored hash
+        bcrypt
+            .compare(dbSalt + inputpassword + PEPPER, dbHash)
+            .then((isMatch) => {
+                if (isMatch) {
+                    // Password is correct: generate JWT
+                    const token = jwt.sign(
+                        { email: dbEmail, username: inputusername },
+                        JWTSECRET,
+                        { expiresIn: "1h" }
+                    );
+                    console.log(`User ${inputusername} logged in, returning token: ${token}`);
+
+                    // Return the token in JSON, so the frontend can store it as a cookie
+                    return res.status(200).json({ token });
+                } else {
+                    console.log("Password incorrect");
+                    return res.status(401).send("Password incorrect");
+                }
+            })
+            .catch((err) => {
+                console.error("Error during bcrypt comparison:", err);
+                return res.status(500).send("Internal error during login");
+            });
+    });
+});
+
+// ------------------ TOTP Verification ------------------ //
 app.post("/totp", (req, res) => {
-    const { totp } = req.body;
+    // The frontend sends { totpInput }
+    const { totpInput } = req.body;
+    console.log("TOTP received:", totpInput);
 
-    // Example logic for TOTP verification (replace with your implementation)
-    const expectedTotp = "123456"; // Replace with actual TOTP generation logic
+    // Generate the current 6-digit TOTP using HMAC
+    const hmac = crypto.createHmac("sha256", TOTPSECRET);
+    const timestamp = Math.floor(Date.now() / 1000 / 30);
+    hmac.update(Buffer.from(timestamp.toString()));
+    const result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
 
-    if (totp === expectedTotp) {
-        res.status(200).send("TOTP verified successfully");
+    if (totpInput === result) {
+        console.log("TOTP verification successful");
+        return res.status(200).send("Code verification successful");
     } else {
-        res.status(401).send("Invalid TOTP code");
+        console.log("TOTP failed");
+        return res.status(401).send("Code comparison failed");
     }
 });
 
-app.listen(PORT, () => console.log(`User Management API running on port ${PORT}`));
-
-// Validate Token Route
+// ------------------ Validate Token ------------------ //
 app.post("/validateToken", (req, res) => {
-    // Extract the token from the Authorization header
+    // Extract Bearer token from Authorization header
     const token = req.headers.authorization?.split(" ")[1];
-
-    // Check if the token is provided
     if (!token) {
         return res.status(401).send("Unauthorized: No token provided");
     }
 
     try {
-        // Verify the token using JWTSECRET
+        // Verify the token with JWTSECRET
         const decoded = jwt.verify(token, JWTSECRET);
-
-        // If valid, return the decoded token data
-        res.status(200).json({ valid: true, user: decoded });
+        console.log("Token validated successfully:", decoded);
+        // If valid, return 200 with user info
+        return res.status(200).json({ valid: true, user: decoded });
     } catch (err) {
-        // Handle invalid or expired tokens
-        res.status(401).send("Unauthorized: Invalid or expired token");
+        console.error("Invalid or expired token:", err.message);
+        return res.status(401).send("Unauthorized: Invalid or expired token");
     }
+});
+
+app.listen(PORT, HOST, () => {
+    console.log(`User Management API running on http://${HOST}:${PORT}`);
 });
