@@ -6,21 +6,21 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
-// Load environment variables
+//load environment variables
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: "http://localhost",  // or "*" in dev if you prefer
+    origin: "http://localhost",  
     methods: ["GET", "POST"],
     credentials: true
   }));
   
   app.use(express.json());
 
-// ENV variables
+//ENV var
 const HOST = process.env.HOST || "0.0.0.0";
 const PORT = process.env.PORT || 5002;
 const MYSQLHOST = process.env.MYSQLHOST || "localhost";
@@ -31,37 +31,37 @@ const TOTPSECRET = process.env.TOTPSECRET || "secretysecret";
 const JWTSECRET = process.env.JWTSECRET || "your-secret-key";
 const SALTROUNDS = 10;
 
-// Create MySQL connection
+//SQL connection
 const connection = mysql.createConnection({
     host: MYSQLHOST,
     user: MYSQLUSER,
     password: MYSQLPASS,
-    database: "users",  // Make sure this DB exists inside your docker container
+    database: "users", 
 });
 
 // SQL statements
 const REGISTERSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
 const LOGINSQL = "SELECT password, salt, email FROM users WHERE username = ?";
 
-// ------------------ Registration ------------------ //
+//  Registration //
 app.post("/register", (req, res) => {
     const { username, email, password } = req.body;
 
-    // Generate a new salt and hash with pepper
+    //generate new salt and hash with pepper
     bcrypt.genSalt(SALTROUNDS, (err, salt) => {
         if (err) {
             console.error("Error generating salt:", err);
             return res.status(500).send("Error generating salt");
         }
 
-        // Combine salt + password + PEPPER, then hash
+        //salt + password + PEPPER, then hash
         bcrypt.hash(salt + password + PEPPER, SALTROUNDS, (err, hash) => {
             if (err) {
                 console.error("Error hashing password:", err);
                 return res.status(500).send("Error generating hash");
             }
 
-            // Store user in DB
+            //store user
             connection.query(REGISTERSQL, [username, hash, email, salt], (error, results) => {
                 if (error) {
                     if (error.code === "ER_DUP_ENTRY") {
@@ -79,9 +79,9 @@ app.post("/register", (req, res) => {
     });
 });
 
-// ------------------ Login ------------------ //
+//  Login //
 app.post("/login", (req, res) => {
-    // Frontend sends {inputusername, inputpassword}
+    
     const { inputusername, inputpassword } = req.body;
     console.log(`Login attempt for user: ${inputusername}`);
 
@@ -95,17 +95,17 @@ app.post("/login", (req, res) => {
             return res.status(404).send("User not found");
         }
 
-        // Extract hashed password and salt from DB
+        //extract hashed password and salt 
         const dbHash = results[0].password;
         const dbSalt = results[0].salt;
         const dbEmail = results[0].email;
 
-        // Compare the combination of salt + user input + pepper to the stored hash
+        //compare the combination of salt + user input + pepper to the stored hash
         bcrypt
             .compare(dbSalt + inputpassword + PEPPER, dbHash)
             .then((isMatch) => {
                 if (isMatch) {
-                    // Password is correct: generate JWT
+                    //password correct: generate JWT
                     const token = jwt.sign(
                         { email: dbEmail, username: inputusername },
                         JWTSECRET,
@@ -113,7 +113,7 @@ app.post("/login", (req, res) => {
                     );
                     console.log(`User ${inputusername} logged in, returning token: ${token}`);
 
-                    // Return the token in JSON, so the frontend can store it as a cookie
+                    //return token in JSON, so frontend can store it as a cookie
                     return res.status(200).json({ token });
                 } else {
                     console.log("Password incorrect");
@@ -127,13 +127,13 @@ app.post("/login", (req, res) => {
     });
 });
 
-// ------------------ TOTP Verification ------------------ //
+// TOTP Verification //
 app.post("/totp", (req, res) => {
-    // The frontend sends { totpInput }
+   
     const { totpInput } = req.body;
     console.log("TOTP received:", totpInput);
 
-    // Generate the current 6-digit TOTP using HMAC
+    //generate current 6-digit TOTP using HMAC
     const hmac = crypto.createHmac("sha256", TOTPSECRET);
     const timestamp = Math.floor(Date.now() / 1000 / 30);
     hmac.update(Buffer.from(timestamp.toString()));
@@ -148,16 +148,16 @@ app.post("/totp", (req, res) => {
     }
 });
 
-// ------------------ Validate Token ------------------ //
+// Validate Token //
 app.post("/validateToken", (req, res) => {
-    // Extract Bearer token from Authorization header
+    // extract token from auth header
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
         return res.status(401).send("Unauthorized: No token provided");
     }
 
     try {
-        // Verify the token with JWTSECRET
+        //verify token with JWTSECRET
         const decoded = jwt.verify(token, JWTSECRET);
         console.log("Token validated successfully:", decoded);
         // If valid, return 200 with user info
