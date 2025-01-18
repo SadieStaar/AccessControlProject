@@ -90,5 +90,59 @@ The **Access Control Project** is a multi-container application demonstrating us
 ## How to Run
 1. **Build and Start** all containers:
    ```bash
+- **Access** the frontend at [http://localhost](http://localhost) (port 80).  
+- **Register** at [http://localhost/register.html](http://localhost/register.html).  
+- **Login** at [http://localhost/login.html](http://localhost/login.html).  
+  - On success, a JWT is returned and stored in a cookie.  
+- **TOTP** at [http://localhost/totp.html](http://localhost/totp.html).  
+  - Enter the 6-digit code from the authenticator container (or your own TOTP script).  
+- **Query** at [http://localhost/query.html](http://localhost/query.html).  
+  - If the JWT is valid, you’ll see data from the “quack” DB.
+
+---
+
+## Authentication & TOTP Flow
+
+- **Register** → Writes a new user into the `users` DB.  
+- **Login** → Checks password with bcrypt. If correct, returns a JWT (expires in 1 hour).  
+- **TOTP** → Verifies the 6-digit code is correct for that 30-second window.  
+- **Query** → The Data API checks the JWT by calling `/validateToken`.
+
+---
+
+## Troubleshooting
+
+- **CORS Errors**  
+  - The user-management-api uses `cors({ origin: "http://localhost" })`. If your front-end runs on a different origin, update or broaden `origin`.
+
+- **“Not Logged In”**  
+  - Occurs if the front-end cannot read the `token` cookie. Make sure you do **not** set `HttpOnly` if you want JavaScript to access it.
+
+- **Invalid ELF Header / Module Not Found**  
+  - Ensure each service runs `npm install` inside Docker (avoid copying host-side `node_modules`).
+
+- **Database Not Created**  
+  - Check the MySQL containers. They run `.sql` scripts from `sql/`. Ensure environment variables match your `docker-compose.yml`.
+
+- **TOTP Wrong**  
+  - Check that `TOTPSECRET` is identical in user-management-api and the authenticator container. The codes must match the same secret.
+
+---
+
+## Technologies Used
+
+- **Frontend**: HTML, CSS, JavaScript (Vanilla)  
+- **Backend**: Node.js (Express), bcrypt, jsonwebtoken, cors, mysql2  
+- **Database**: MySQL in Docker  
+- **Containerization**: Docker Compose (multiple services)
+
+---
+
+## Conclusion
+
+This **Access Control Project** showcases a secure, multi-step authentication process using **JWT** and **TOTP**. By splitting the **User Management API** from the **Data API**, you enforce strict token-based access to sensitive data. Everything is containerized for easy setup.
+
+Just run `docker-compose up`, open [http://localhost](http://localhost), and follow the **registration → login → TOTP → query** flow!
+
    docker-compose build
    docker-compose up
