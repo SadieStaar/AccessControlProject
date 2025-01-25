@@ -1,11 +1,11 @@
 var parsedUrl = new URL(window.location.href);
 
-//redirects user to the login page login.html
+//redirects user to login.html
 function tologinpage() {
     window.location.replace("login.html");
 }
 
-//redirects user to the registration page registration.html
+//redirects user to registration.html
 function toregistrationpage() {
     window.location.replace("register.html");
 }
@@ -30,7 +30,7 @@ function register() {
     if (password === passwordcheck) {
         console.log("Passwords match, sending data to user-management-api...");
         fetch("http://" + parsedUrl.host + ":5002/register", {
-            method:"POST",
+            method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
@@ -58,8 +58,7 @@ function register() {
             console.error("Network or unexpected error:", err);
             alert("A network error occurred during registration.");
         });
-    }
-    else {
+    } else {
         alert("Passwords do not match");
     }
 }
@@ -87,14 +86,14 @@ function login() {
     //response
     .then(async (data) => {
         switch(data.status) {
-            case 200:  //successful 
+            case 200:  //successful
                 console.log("Frontend redirecting to TOTP...");
                 try {
                     const response = await data.json(); //parse response body to get token
                     const token = response.token;
                     if (token) {
                         //store the token as a cookie
-                        document.cookie = `token=${token}; Path=/; SameSite=Strict`; //HttpOnly; was here
+                        document.cookie = `token=${token}; Path=/; SameSite=Strict`;
                         console.log("JWT stored as cookie.");
                     } else {
                         console.error("No token received in response.");
@@ -120,7 +119,7 @@ function login() {
         //reset page so user can try again: only on login failure
         location.reload();
     })
-    //error handler 
+    //error handler
     .catch((err) => {
         console.error(`Network or unexpected error: ${err.message}; Stack trace: ${err.stack}`);
         alert("A network error occurred. Please check your connection and try again.");
@@ -130,7 +129,6 @@ function login() {
 
 //take totp code, send to user-management-api
 function submitTOTP() {
-   
     const totpInput = document.getElementById('totp').value;
     console.log(`received: ${totpInput}`);
 
@@ -151,7 +149,7 @@ function submitTOTP() {
     //response
     .then((resp) => {
         switch(resp.status){
-            case 200: //successful 
+            case 200: //successful
                 console.log("TOTP verified. Redirecting to Query page...");
                 window.location.replace("query.html");
                 return;
@@ -164,7 +162,7 @@ function submitTOTP() {
                 location.reload();
         }
     })
-    //error handler
+    //error handling
     .catch((err) => {
         alert("An error occurred while processing the request.");
         console.error("Unexpected error occurred:", err);
@@ -172,9 +170,9 @@ function submitTOTP() {
     });
 }
 
-//the original function from the forked repo
+// Query original quack table
 function query() {
-    const token = getCookie('token'); // Retrieve the JWT token
+    const token = getCookie('token'); // Retrieve JWT token
 
     if (!token) {
         alert("You are not logged in. Please log in first.");
@@ -182,16 +180,15 @@ function query() {
         return;
     }
 
-    
     fetch("http://" + parsedUrl.hostname + "/query", {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`, //include token in the auth header
+            Authorization: `Bearer ${token}`, //include token auth header
         },
     })
     .then((resp) => {
         if (resp.ok) {
-            return resp.text();
+            return resp.text(); 
         } else if (resp.status === 401) {
             alert("Unauthorized access. Please log in again.");
             window.location.replace("login.html");
@@ -205,5 +202,79 @@ function query() {
     .catch((err) => {
         console.error("Query error:", err.message);
         alert("Failed to fetch data. Please try again.");
+    });
+}
+
+// Query new table
+function queryFlightLogs() {
+    const token = getCookie('token');
+
+    if (!token) {
+        alert("You are not logged in. Please log in first.");
+        window.location.replace("login.html");
+        return;
+    }
+
+    fetch("http://" + parsedUrl.hostname + "/queryFlightLogs", {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+    })
+    .then((resp) => {
+        if (resp.ok) {
+            return resp.text(); 
+        } else if (resp.status === 401) {
+            alert("Unauthorized access. Please log in again.");
+            window.location.replace("login.html");
+        } else if (resp.status === 403) {
+            alert("Forbidden: You do not have the required role.");
+        } else {
+            throw new Error("Failed to fetch data");
+        }
+    })
+    .then((data) => {
+        document.getElementById("response").innerHTML = data;
+    })
+    .catch((err) => {
+        console.error("QueryFlightLogs error:", err.message);
+        alert("Failed to fetch flight logs. Please try again.");
+    });
+}
+
+// Query quack_stats table
+function queryQuackStats() {
+    const token = getCookie('token');
+
+    if (!token) {
+        alert("You are not logged in. Please log in first.");
+        window.location.replace("login.html");
+        return;
+    }
+
+    fetch("http://" + parsedUrl.hostname + "/queryQuackStats", {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+    })
+    .then((resp) => {
+        if (resp.ok) {
+            return resp.text(); 
+        } else if (resp.status === 401) {
+            alert("Unauthorized access. Please log in again.");
+            window.location.replace("login.html");
+        } else if (resp.status === 403) {
+            alert("Forbidden: You do not have the required role.");
+        } else {
+            throw new Error("Failed to fetch data");
+        }
+    })
+    .then((data) => {
+        document.getElementById("response").innerHTML = data;
+    })
+    .catch((err) => {
+        console.error("QueryQuackStats error:", err.message);
+        alert("Failed to fetch quack stats. Please try again.");
     });
 }

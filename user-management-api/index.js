@@ -13,12 +13,12 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: "http://localhost",  
+    origin: "http://localhost",
     methods: ["GET", "POST"],
     credentials: true
-  }));
+}));
   
-  app.use(express.json());
+app.use(express.json());
 
 //ENV var
 const HOST = process.env.HOST || "0.0.0.0";
@@ -40,8 +40,9 @@ const connection = mysql.createConnection({
 });
 
 // SQL statements
+// update, now SELECT role as well from the DB
 const REGISTERSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
-const LOGINSQL = "SELECT password, salt, email FROM users WHERE username = ?";
+const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; // <-- role added here
 
 //  Registration //
 app.post("/register", (req, res) => {
@@ -81,7 +82,6 @@ app.post("/register", (req, res) => {
 
 //  Login //
 app.post("/login", (req, res) => {
-    
     const { inputusername, inputpassword } = req.body;
     console.log(`Login attempt for user: ${inputusername}`);
 
@@ -95,19 +95,20 @@ app.post("/login", (req, res) => {
             return res.status(404).send("User not found");
         }
 
-        //extract hashed password and salt 
-        const dbHash = results[0].password;
-        const dbSalt = results[0].salt;
+        //extract hashed password, salt, and email
+        const dbHash  = results[0].password;
+        const dbSalt  = results[0].salt;
         const dbEmail = results[0].email;
+        // (2) NEW: fetch role from DB result
+        const dbRole  = results[0].role;  // <-- ADDED LINE
 
         //compare the combination of salt + user input + pepper to the stored hash
-        bcrypt
-            .compare(dbSalt + inputpassword + PEPPER, dbHash)
+        bcrypt.compare(dbSalt + inputpassword + PEPPER, dbHash)
             .then((isMatch) => {
                 if (isMatch) {
-                    //password correct: generate JWT
+                    // password correct: generate JWT
                     const token = jwt.sign(
-                        { email: dbEmail, username: inputusername },
+                        { email: dbEmail, username: inputusername, role: dbRole },
                         JWTSECRET,
                         { expiresIn: "1h" }
                     );
@@ -129,10 +130,8 @@ app.post("/login", (req, res) => {
 
 // TOTP Verification //
 app.post("/totp", (req, res) => {
-   
     const { totpInput } = req.body;
     console.log("TOTP received:", totpInput);
-
     //generate current 6-digit TOTP using HMAC
     const hmac = crypto.createHmac("sha256", TOTPSECRET);
     const timestamp = Math.floor(Date.now() / 1000 / 30);
@@ -147,7 +146,6 @@ app.post("/totp", (req, res) => {
         return res.status(401).send("Code comparison failed");
     }
 });
-
 // Validate Token //
 app.post("/validateToken", (req, res) => {
     // extract token from auth header

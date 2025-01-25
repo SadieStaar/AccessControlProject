@@ -8,8 +8,11 @@ services:
       - MYSQL_ROOT_HOST=%
     volumes:
       - ./sql/sql-users:/docker-entrypoint-initdb.d/
+    networks:
+      - mynet
 
   user-management-api:
+    container_name: user-management-api
     build: ./user-management-api
     environment:
       - HOST=0.0.0.0
@@ -20,22 +23,26 @@ services:
       - PEPPER=802A
       - TOTPSECRET=secretysecret
       - JWTSECRET=othersecretysecret
-    #volumes:
-      #- ./user-management-api:/app
-    ports:
-      - "5002:5002"
     depends_on:
       - mysql-users
+    networks:
+      - mynet
+    ports:
+      - "5002:5002"
 
   # ~~~~ data server setup ~~~~ #
   mysql-quack:
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=example
+      - MYSQL_ROOT_HOST=%
     volumes:
       - ./sql/sql-quack:/docker-entrypoint-initdb.d/
+    networks:
+      - mynet
 
   server-data:
+    container_name: server-data
     build: ./servers/server-data
     environment:
       - HOST=0.0.0.0
@@ -43,13 +50,16 @@ services:
       - MYSQLHOST=mysql-quack
       - MYSQLUSER=root
       - MYSQLPASS=example
+      - JWTSECRET=your_secret_key
     volumes:
       - ./servers/server-data/backend-data:/app/backend-data
       - ./servers/server-data/frontend-data:/app/frontend-data
-    ports:
-      - "80:80"
     depends_on:
       - mysql-quack
+    networks:
+      - mynet
+    ports:
+      - "80:80"
 
   # ~~~ TOTP authenticator ~~~~ #
   authenticator:
@@ -58,3 +68,9 @@ services:
       - TOTPSECRET=secretysecret
     volumes:
       - ./authenticator:/app
+    networks:
+      - mynet
+
+networks:
+  mynet:
+    driver: bridge
