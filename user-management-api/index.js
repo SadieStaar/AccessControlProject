@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
-//load environment variables
+//load environment variables from .env file
 dotenv.config();
 
 const app = express();
@@ -20,7 +20,7 @@ app.use(cors({
   
 app.use(express.json());
 
-//ENV var
+//ENV variables
 const HOST = process.env.HOST || "0.0.0.0";
 const PORT = process.env.PORT || 5002;
 const MYSQLHOST = process.env.MYSQLHOST || "localhost";
@@ -43,6 +43,12 @@ const connection = mysql.createConnection({
 // update, now SELECT role as well from the DB
 const REGISTERSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
 const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; // <-- role added here
+
+//Use dynamic import bc node-fetch
+let fetch;
+(async () => {
+    fetch = (await import('node-fetch')).default;
+})();
 
 //  Registration //
 app.post("/register", (req, res) => {
@@ -146,6 +152,7 @@ app.post("/totp", (req, res) => {
         return res.status(401).send("Code comparison failed");
     }
 });
+
 // Validate Token //
 app.post("/validateToken", (req, res) => {
     // extract token from auth header
@@ -166,6 +173,42 @@ app.post("/validateToken", (req, res) => {
     }
 });
 
+app.get("/protectedResource", async (req, res) => {
+    try {
+        const user = await validateToken(req.headers.authorization);
+        //Proceed with access
+        res.status(200).json({ message: "Access granted", user });
+    } catch (err) {
+        res.status(401).json({ message: `Unauthorized: ${err.message}` });
+    }
+});
+
 app.listen(PORT, HOST, () => {
     console.log(`User Management API running on http://${HOST}:${PORT}`);
 });
+
+async function validateToken(authHeader) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new Error("No token provided");
+    }
+    const token = authHeader.split(" ")[1];
+
+    const validationResponse = await fetch("http://user-management-api:5002/validateToken", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!validationResponse.ok) {
+        const error = await validationResponse.text();
+        throw new Error(error);
+    }
+
+    const validationData = await validationResponse.json();
+    console.log("Token validated successfully:", validationData);
+
+    // expect validationData.user to have { username, email, role, iat, exp, ... }
+    return validationData.user;
+}

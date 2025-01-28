@@ -2,9 +2,13 @@
 const express = require("express");
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken"); 
-const fetch = require("node-fetch"); 
 require("dotenv").config(); 
 
+// Use dynamic import for node-fetch
+let fetch;
+(async () => {
+    fetch = (await import('node-fetch')).default;
+})();
 
 const PORT = String(process.env.PORT || 8001);
 const HOST = String(process.env.HOST || "localhost");
