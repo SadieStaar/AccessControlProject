@@ -41,8 +41,8 @@ const connection = mysql.createConnection({
 
 // SQL statements
 // update, now SELECT role as well from the DB
-const REGISTERSQL = "INSERT INTO users (username, password, email, salt) VALUES (?, ?, ?, ?)";
-const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; // <-- role added here
+const REGISTERSQL = "INSERT INTO users (username, password, email, salt, role) VALUES (?, ?, ?, ?, ?)";
+const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; 
 
 //Use dynamic import bc node-fetch
 let fetch;
@@ -52,7 +52,7 @@ let fetch;
 
 //  Registration //
 app.post("/register", (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, role = "member" } = req.body;
 
     //generate new salt and hash with pepper
     bcrypt.genSalt(SALTROUNDS, (err, salt) => {
@@ -69,7 +69,7 @@ app.post("/register", (req, res) => {
             }
 
             //store user
-            connection.query(REGISTERSQL, [username, hash, email, salt], (error, results) => {
+            connection.query(REGISTERSQL, [username, hash, email, salt, role], (error, results) => {
                 if (error) {
                     if (error.code === "ER_DUP_ENTRY") {
                         console.error("User already in database");
