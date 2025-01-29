@@ -43,11 +43,16 @@ function register() {
                 case 201:
                     // success, redirect to home page
                     console.log("Registration successful, redirecting to homepage...");
+                    alert("Registered successfully. Welcome to the flock, Quackian!");
                     window.location.replace("index.html");
+                    break;
+                case 400: // invalid syntax or characters
+                    console.log("Invalid character:", resp.message);
+                    alert("Invalid character");
                     break;
                 case 409: // user already in system
                     console.error("User already exists");
-                    alert("This username has been taken, try again.");
+                    alert("This username has been taken, please try again.");
                     break;
                 default:
                     console.error("this is the default case, error occurred");

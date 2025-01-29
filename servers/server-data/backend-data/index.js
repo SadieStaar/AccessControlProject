@@ -93,7 +93,7 @@ app.get("/query", async function (req, res) {
 
 
  
-app.get("/queryFlightLogs", async function (req, res) {// New route for "flight_logs" table.Accessible only by premium or admin
+app.get("/queryFlightLogs", async function (req, res) {// New route for "flight_logs" table. Accessible only by premium or admin
   try {
     const user = await validateToken(req.headers.authorization);
 

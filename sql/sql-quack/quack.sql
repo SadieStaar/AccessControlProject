@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS quack (
 INSERT INTO quack (username, info)
 VALUES
     ('Donald', 'Famous for his sailor outfit and temper'),
-    ('Daisy', 'Donald Duck’s girlfriend'),
+    ('Daisy', 'Donald Duck''s girlfriend'),
     ('Scrooge', 'The richest duck in the world, loves his money bin'),
     ('Huey', 'One of Donald Duck’s nephews, known for his red cap'),
     ('Dewey', 'One of Donald Duck’s nephews, known for his blue cap'),

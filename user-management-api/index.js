@@ -30,6 +30,8 @@ const PEPPER = process.env.PEPPER || "802A";
 const TOTPSECRET = process.env.TOTPSECRET || "secretysecret";
 const JWTSECRET = process.env.JWTSECRET || "your-secret-key";
 const SALTROUNDS = 10;
+const USERPASSREGEX = /["';:(){}|\/\\]/;
+const EMAILREGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 //SQL connection
 const connection = mysql.createConnection({
@@ -50,9 +52,24 @@ let fetch;
     fetch = (await import('node-fetch')).default;
 })();
 
+
 //  Registration //
 app.post("/register", (req, res) => {
-    const { username, email, password, role = "member" } = req.body;
+    let { username, email, password, role = "member" } = req.body;
+
+    //check for valid credentials: 400 bad request
+    if ((USERPASSREGEX.test(username)) || username.length < 8) {
+        console.log("Error: Bad username");
+        return res.status(400).send("Invalid username");
+    };
+    if ((USERPASSREGEX.test(password)) || password.length < 8) {
+        console.log("Error: Bad password");
+        return res.status(400).send("Invalid password");
+    };
+    if (!(EMAILREGEX.test(email))) {
+        console.log("Error: Bad email");
+        return res.status(400).send("Invalid email");
+    };
 
     //generate new salt and hash with pepper
     bcrypt.genSalt(SALTROUNDS, (err, salt) => {
@@ -90,6 +107,12 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
     const { inputusername, inputpassword } = req.body;
     console.log(`Login attempt for user: ${inputusername}`);
+
+    // check if valid characters
+    if (USERPASSREGEX.test(inputusername) && USERPASSREGEX.test(inputpassword)){
+        console.error("Invalid characters in username or password");
+        return res.status(400).send("Invalid characters");
+    };
 
     connection.query(LOGINSQL, [inputusername], (error, results) => {
         if (error) {
