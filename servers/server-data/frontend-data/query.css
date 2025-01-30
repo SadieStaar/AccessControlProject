@@ -11,7 +11,7 @@ body {
     flex-direction: column; /* Arrange content in a column */
 }
 .content{
-    margin-top: 10%;
+    margin-top: 5%;
     text-align: center;
 }
 .button {
