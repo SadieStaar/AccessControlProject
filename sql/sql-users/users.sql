@@ -40,3 +40,12 @@ VALUES(
     "user@example.com",
     "abc1"
 );
+
+-- logs table
+CREATE table logs (
+    id VARCHAR(255) NOT NULL,
+    user VARCHAR(255) NOT NULL,
+    timeaccessed VARCHAR(255) NOT NULL,
+    dataaccessed VARCHAR(255) NOT NULL,
+    success ENUM('true', 'false') NOT NULL
+);
