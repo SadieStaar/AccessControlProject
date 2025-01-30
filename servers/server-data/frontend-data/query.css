@@ -1,5 +1,9 @@
 body {
-    background-color: orange;
+    background-image: url('cartoonDuck.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     margin: 0;
     display: flex;
     justify-content: center; /* Center horizontally */
