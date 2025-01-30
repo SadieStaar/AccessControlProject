@@ -1,5 +1,5 @@
 body {
-    background-color: lightblue;
+    background-color: lightyellow;
     margin: 0;
     display: flex;
     justify-content: center; /* Center horizontally */
@@ -7,7 +7,7 @@ body {
     flex-direction: column; /* Arrange content in a column */
 }
 .content{
-    margin-top: 5%;
+    margin-top: 10%;
     text-align: center;
 }
 .button {
