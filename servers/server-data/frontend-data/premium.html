@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!-- Premium Page -->
+
+<html>
+    <head>
+        <link rel="shortcut icon" type="image/x-icon" href="donald_duck.png">
+        <link type="text/css" rel="stylesheet" href="query.css">
+        <script type="text/javascript" src="common.js" defer></script>
+        <title>Welcome, Premium Quackian!</title>
+    </head>
+
+    <body>
+        <div class="content">
+          <h1 class="title">Welcome Duck Premium Member!</h1>
+            <button class="button" onclick="query()">Query Quack Table</button>
+            <br><br>
+
+            <!-- Queries the flight_logs table: available for premium -->
+            <button class="button" onclick="queryFlightLogs()">Query Flight Logs</button>
+            <br><br>
+            
+            <textarea id="response" rows="20" cols="45" placeholder="..."></textarea>
+        </div>
+    </body>
+</html> 

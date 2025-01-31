@@ -137,13 +137,11 @@ function submitTOTP() {
     const totpInput = document.getElementById('totp').value;
     console.log(`received: ${totpInput}`);
 
-    //make sure user enters something
     if (!totpInput) {
         alert('Enter the 6 TOTP numbers in the textbox.');
         return;
     }
 
-    //send to the api for processing
     fetch("http://" + parsedUrl.hostname + ":5002/totp", {
         method: "POST",
         headers: {
@@ -151,23 +149,39 @@ function submitTOTP() {
         },
         body: JSON.stringify({ totpInput }),
     })
-    //response
     .then((resp) => {
-        switch(resp.status){
-            case 200: //successful
-                console.log("TOTP verified. Redirecting to Query page...");
-                window.location.replace("member.html");
-                return;
-            case 401: //totp doesn't match
-                console.error("TOTP not verified.");
-                alert("Code not verified. Try again.");
-                break;
-            default:
-                console.log("TOTP not verified");
-                location.reload();
+        if (resp.status === 200) {
+            console.log("TOTP verified. Redirecting based on role...");
+            const token = getCookie('token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const role = payload.role;
+                switch(role) {
+                    case 'member':
+                        window.location.replace("member.html");
+                        break;
+                    case 'premium':
+                        window.location.replace("premium.html");
+                        break;
+                    case 'admin':
+                        window.location.replace("adminquery.html");
+                        break;
+                    default:
+                        console.error("Unknown role, redirecting to default page.");
+                        window.location.replace("index.html");
+                }
+            } else {
+                console.error("No token found, redirecting to login.");
+                window.location.replace("login.html");
+            }
+        } else if (resp.status === 401) {
+            console.error("TOTP not verified.");
+            alert("Code not verified. Try again.");
+        } else {
+            console.log("TOTP not verified");
+            location.reload();
         }
     })
-    //error handling
     .catch((err) => {
         alert("An error occurred while processing the request.");
         console.error("Unexpected error occurred:", err);
