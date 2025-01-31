@@ -1,0 +1,45 @@
+body {
+    background-image: url('loginduck.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    flex-direction: column; /* Arrange content in a column */
+}
+.content{
+    margin-top: 5%;
+    text-align: center;
+}
+.button {
+    background-color: black;
+    border: none;
+    color: whitesmoke;
+    padding: 10px 30px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 35px;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    cursor: pointer;
+}
+.textbox {
+    padding: 10px;
+    font-size: 25px;
+    border: 2px solid #ccc;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+.title {
+    color: black;
+    text-align: center;
+    font-size: 40px;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+.paragraph {
+    color: black;
+    text-align: center;
+    font-size: 30px;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
