@@ -106,10 +106,10 @@ app.post("/register", (req, res) => {
 //  Login //
 app.post("/login", (req, res) => {
     const { inputusername, inputpassword } = req.body;
-    console.log(`Login attempt for user: ${inputusername}`);
+    console.log(`Login attempt for user: \"${inputusername}\"`);
 
     // check if valid characters
-    if (USERPASSREGEX.test(inputusername) && USERPASSREGEX.test(inputpassword)){
+    if (USERPASSREGEX.test(inputusername) || USERPASSREGEX.test(inputpassword)){
         console.error("Invalid characters in username or password");
         return res.status(400).send("Invalid characters");
     };
