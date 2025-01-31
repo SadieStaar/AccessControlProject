@@ -11,8 +11,17 @@
 
     <body>
         <div class="content">
-          <h1 class="title">Duck Member!</h1>
+          <h1 class="title">Welcome Duck Member!</h1>
+            <button class="button" onclick="query()">Query Quack Table</button>
+            <br><br>
+
+            <!-- Queries the flight_logs table: unavaliable as a member -->
+            <button class="button-red" onclick="queryFlightLogs()">Query Flight Logs</button>
+            <br><br>
+            
+            <button class="button-red" onclick="queryQuackStats()">Query Quack Stats</button>
           <p></p>
+            <textarea id="response" rows="20" cols="45" placeholder="..."></textarea>
         </div>
     </body>
 </html>
