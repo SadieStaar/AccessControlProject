@@ -156,7 +156,7 @@ function submitTOTP() {
         switch(resp.status){
             case 200: //successful
                 console.log("TOTP verified. Redirecting to Query page...");
-                window.location.replace("query.html");
+                window.location.replace("member.html");
                 return;
             case 401: //totp doesn't match
                 console.error("TOTP not verified.");
