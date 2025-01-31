@@ -17,9 +17,9 @@ VALUES
     ('Donald', 'Famous for his sailor outfit and temper'),
     ('Daisy', 'Donald Duck''s girlfriend'),
     ('Scrooge', 'The richest duck in the world, loves his money bin'),
-    ('Huey', 'One of Donald Duck’s nephews, known for his red cap'),
-    ('Dewey', 'One of Donald Duck’s nephews, known for his blue cap'),
-    ('Louie', 'One of Donald Duck’s nephews, known for his green cap')
+    ('Huey', 'One of Donald Duck''s nephews, known for his red cap'),
+    ('Dewey', 'One of Donald Duck''s nephews, known for his blue cap'),
+    ('Louie', 'One of Donald Duck''s nephews, known for his green cap')
 ON DUPLICATE KEY UPDATE 
     info = VALUES(info);
 
