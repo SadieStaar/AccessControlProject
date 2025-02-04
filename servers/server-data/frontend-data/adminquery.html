@@ -7,6 +7,25 @@
         <link type="text/css" rel="stylesheet" href="query.css">
         <script type="text/javascript" src="common.js"></script>
         <title>Welcome, Admin Quackian!</title>
+        <style>
+            .log-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                background: rgba(255, 255, 255, 0.9);
+            }
+            .log-table th, .log-table td {
+                padding: 8px;
+                text-align: left;
+                border: 1px solid #ddd;
+            }
+            .log-table th {
+                background-color: black;
+                color: white;
+            }
+            .success { color: green; }
+            .failure { color: red; }
+        </style>
     </head>
 
     <body>
@@ -29,8 +48,71 @@
             <!-- New button: Queries logs -->
             <button class="button" onclick="queryLogs()">ADMIN LOGS</button>
 
+            <div id="logStats"></div>
+            <div id="logTable"></div>
             <p></p>
             <textarea id="response" rows="20" cols="45" placeholder="..."></textarea>
         </div>
+
+        <script>
+            function queryLogs() {
+                const token = getCookie('token');
+                if (!token) {
+                    alert("Not logged in");
+                    return;
+                }
+
+                fetch("/logs", {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(logs => {
+                    // Clear the textarea
+                    document.getElementById('response').value = '';
+                    
+                    // Calculate statistics
+                    const totalAccesses = logs.length;
+                    const successfulAccesses = logs.filter(log => log.success === 'true').length;
+                    const failedAccesses = totalAccesses - successfulAccesses;
+
+                    // Display statistics with white text
+                    document.getElementById('logStats').innerHTML = `
+                        <h3 style="color: white;">Access Statistics</h3>
+                        <p style="color: white;">Total Accesses: ${totalAccesses}</p>
+                        <p style="color: white;">Successful: ${successfulAccesses}</p>
+                        <p style="color: white;">Failed: ${failedAccesses}</p>
+                    `;
+
+                    // Create table
+                    const table = `
+                        <table class="log-table">
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Resource</th>
+                                <th>Status</th>
+                            </tr>
+                            ${logs.map(log => `
+                                <tr>
+                                    <td>${log.timeaccessed}</td>
+                                    <td>${log.user}</td>
+                                    <td>${log.dataaccessed}</td>
+                                    <td class="${log.success === 'true' ? 'success' : 'failure'}">
+                                        ${log.success === 'true' ? '✓ Success' : '✗ Failed'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    `;
+                    document.getElementById('logTable').innerHTML = table;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error fetching logs. Make sure you have admin access.');
+                });
+            }
+        </script>
     </body>
 </html>

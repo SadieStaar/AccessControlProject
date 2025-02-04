@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const { v4: uuidv4 } = require('uuid');
 
 //load environment variables from .env file
 dotenv.config();
@@ -203,6 +204,72 @@ app.get("/protectedResource", async (req, res) => {
         res.status(200).json({ message: "Access granted", user });
     } catch (err) {
         res.status(401).json({ message: `Unauthorized: ${err.message}` });
+    }
+});
+
+// Add logging endpoint
+app.post("/log", async (req, res) => {
+    const { user, dataaccessed, success } = req.body;
+    const id = uuidv4();
+    const timeaccessed = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const INSERT_LOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
+    
+    connection.query(INSERT_LOG, [id, user, timeaccessed, dataaccessed, success], (error, results) => {
+        if (error) {
+            console.error("Error logging activity:", error);
+            return res.status(500).json({ message: "Failed to log activity" });
+        }
+        res.status(201).json({ message: "Activity logged successfully" });
+    });
+});
+
+// Add get logs endpoint (admin only)
+app.get("/logs", async (req, res) => {
+    try {
+        const user = await validateToken(req.headers.authorization);
+        
+        if (user.role !== 'admin') {
+            // Log the failed attempt
+            const logData = {
+                user: user.username,
+                dataaccessed: 'logs',
+                success: 'false'
+            };
+            
+            await fetch("http://user-management-api:5002/log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(logData)
+            });
+            
+            return res.status(403).json({ message: "Forbidden: Admin access required" });
+        }
+
+        // Log the successful access attempt
+        const logData = {
+            user: user.username,
+            dataaccessed: 'logs',
+            success: 'true'
+        };
+        
+        await fetch("http://user-management-api:5002/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(logData)
+        });
+
+        // Fetch logs
+        connection.query("SELECT * FROM logs ORDER BY timeaccessed DESC", (error, results) => {
+            if (error) {
+                console.error("Database error:", error);
+                return res.status(500).json({ message: "Database error" });
+            }
+            res.status(200).json(results);
+        });
+    } catch (err) {
+        console.error("Error:", err);
+        res.status(401).json({ message: "Unauthorized" });
     }
 });
 

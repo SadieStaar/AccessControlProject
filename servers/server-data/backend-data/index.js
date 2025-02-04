@@ -66,29 +66,48 @@ async function validateToken(authHeader) {
   return validationData.user;
 }
 
+async function logAccess(username, dataAccessed, success) {
+    try {
+        await fetch("http://user-management-api:5002/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user: username,
+                dataaccessed: dataAccessed,
+                success: success ? 'true' : 'false'
+            })
+        });
+    } catch (error) {
+        console.error("Error logging access:", error);
+    }
+}
 
 // accessible by any role
 app.get("/query", async function (req, res) {
-  try {
-    const user = await validateToken(req.headers.authorization);
-
-    
-    if (!["member", "premium", "admin"].includes(user.role)) {// Check role, if you want it open, jsut verify user exist
-      return res.status(403).json({ message: "Forbidden: Insufficient role" });
+    try {
+        const user = await validateToken(req.headers.authorization);
+        
+        if (!["member", "premium", "admin"].includes(user.role)) {
+            // Log failed attempt
+            await logAccess(user.username, "quack_table", false);
+            return res.status(403).json({ message: "Forbidden: Insufficient role" });
+        }
+        
+        connection.query(SQL_QUACK, async (error, results) => {
+            if (error) {
+                // Log database error
+                await logAccess(user.username, "quack_table", false);
+                console.error("Database error:", error.message);
+                return res.status(500).json({ message: "Database error" });
+            }
+            // Log successful access
+            await logAccess(user.username, "quack_table", true);
+            res.status(200).json(results);
+        });
+    } catch (err) {
+        console.error("Error validating token:", err.message);
+        return res.status(401).json({ message: `Unauthorized: ${err.message}` });
     }
-
-    
-    connection.query(SQL_QUACK, (error, results) => {      // If the user has a valid role, execute the SQL query
-      if (error) {
-        console.error("Database error:", error.message);
-        return res.status(500).json({ message: "Database error" });
-      }
-      res.status(200).json(results); //return results
-    });
-  } catch (err) {
-    console.error("Error validating token:", err.message);
-    return res.status(401).json({ message: `Unauthorized: ${err.message}` });
-  }
 });
 
 
@@ -99,14 +118,17 @@ app.get("/queryFlightLogs", async function (req, res) {// New route for "flight_
 
     
     if (!["premium", "admin"].includes(user.role)) {// Only premium or admin
+      await logAccess(user.username, "flight_logs", false);
       return res.status(403).json({ message: "Forbidden: Premium or Admin only" });
     }
 
-    connection.query(SQL_FLIGHT_LOGS, (error, results) => {
+    connection.query(SQL_FLIGHT_LOGS, async (error, results) => {
       if (error) {
+        await logAccess(user.username, "flight_logs", false);
         console.error("Database error:", error.message);
         return res.status(500).json({ message: "Database error" });
       }
+      await logAccess(user.username, "flight_logs", true);
       res.status(200).json(results);
     });
   } catch (err) {
@@ -123,14 +145,17 @@ app.get("/queryQuackStats", async function (req, res) {// New route for "quack_s
 
     // Only admins
     if (user.role !== "admin") {
+      await logAccess(user.username, "quack_stats", false);
       return res.status(403).json({ message: "Forbidden: Admins only" });
     }
 
-    connection.query(SQL_QUACK_STATS, (error, results) => {
+    connection.query(SQL_QUACK_STATS, async (error, results) => {
       if (error) {
+        await logAccess(user.username, "quack_stats", false);
         console.error("Database error:", error.message);
         return res.status(500).json({ message: "Database error" });
       }
+      await logAccess(user.username, "quack_stats", true);
       res.status(200).json(results);
     });
   } catch (err) {
@@ -139,6 +164,36 @@ app.get("/queryQuackStats", async function (req, res) {// New route for "quack_s
   }
 });
 
+// Add new endpoint to proxy log requests
+app.get("/logs", async function (req, res) {
+    try {
+        const user = await validateToken(req.headers.authorization);
+        
+        if (user.role !== 'admin') {
+            await logAccess(user.username, "logs", false);
+            return res.status(403).json({ message: "Forbidden: Admin access required" });
+        }
+
+        // Forward request to user-management-api
+        const response = await fetch("http://user-management-api:5002/logs", {
+            headers: {
+                Authorization: req.headers.authorization
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const logs = await response.json();
+        await logAccess(user.username, "logs", true);
+        res.status(200).json(logs);
+
+    } catch (err) {
+        console.error("Error:", err);
+        res.status(401).json({ message: "Unauthorized" });
+    }
+});
 
 app.listen(PORT, HOST, () => {
   console.log(`Running on http://${HOST}:${PORT}`);
