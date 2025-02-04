@@ -43,7 +43,7 @@ The **Access Control Project** is a dockerized application testing user authenti
   - *dockerfile, package.json, totp.js*  
   - Stand-alone TOTP generator (optional)
 
-- **servers/server-data/**  
+- **server-data/**  
   - **backend-data/index.js**: Data API that serves `/query`, `/queryFlightLogs`, `/queryQuackStats`, and static files.  
   - **frontend-data/**: HTML, CSS, and JS (e.g., `common.js`) for registration, login, TOTP, and query pages.  
   - *dockerfile*: Builds the data server container.

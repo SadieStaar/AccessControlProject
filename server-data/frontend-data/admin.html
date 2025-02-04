@@ -3,9 +3,9 @@
 
 <html>
     <head>
-        <link rel="shortcut icon" type="image/x-icon" href="donald_duck.png">
-        <link type="text/css" rel="stylesheet" href="query.css">
-        <script type="text/javascript" src="common.js"></script>
+        <link rel="shortcut icon" type="image/x-icon" href="./web-images/donald_duck.png">
+        <link type="text/css" rel="stylesheet" href="./css-sheets/query.css">
+        <script type="text/javascript" src="../common.js"></script>
         <title>Welcome, Admin Quackian!</title>
         <style>
             .log-table {
@@ -32,20 +32,18 @@
         <div class="content">
             <h1 class="title">Welcome, ADMIN Quackian!</h1>
 
-            <!-- Original button: Queries the quack table -->
-            <button class="button" onclick="query()">Query Quack Table</button>
+            <!-- Queries the quack table -->
+            <button class="button" onclick="queryQuackTable()">Query Quack Table</button>
 
-            <br><br>
-
-            <!-- New button: Queries the flight_logs table -->
+            <!-- Queries the flight_logs table -->
             <button class="button" onclick="queryFlightLogs()">Query Flight Logs</button>
 
             <br><br>
 
-            <!-- New button: Queries the quack_stats table -->
+            <!-- Queries the quack_stats table -->
             <button class="button" onclick="queryQuackStats()">Query Quack Stats</button>
 
-            <!-- New button: Queries logs -->
+            <!-- Queries logs -->
             <button class="button" onclick="queryLogs()">ADMIN LOGS</button>
 
             <div id="logStats"></div>

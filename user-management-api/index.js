@@ -1,3 +1,4 @@
+// REQUIRED PACKAGES
 const express = require("express");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
@@ -7,21 +8,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const { v4: uuidv4 } = require('uuid');
 
-//load environment variables from .env file
+// ENV VARIABLES
 dotenv.config();
-
-const app = express();
-app.use(express.json());
-
-app.use(cors({
-    origin: "http://localhost",
-    methods: ["GET", "POST"],
-    credentials: true
-}));
-  
-app.use(express.json());
-
-//ENV variables
 const HOST = process.env.HOST || "0.0.0.0";
 const PORT = process.env.PORT || 5002;
 const MYSQLHOST = process.env.MYSQLHOST || "localhost";
@@ -30,11 +18,22 @@ const MYSQLPASS = process.env.MYSQLPASS || "rootpassword";
 const PEPPER = process.env.PEPPER || "802A";
 const TOTPSECRET = process.env.TOTPSECRET || "secretysecret";
 const JWTSECRET = process.env.JWTSECRET || "your-secret-key";
+
+// OTHER CONSTANTS
 const SALTROUNDS = 10;
 const USERPASSREGEX = /["';:(){}|\/\\]/;
 const EMAILREGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-//SQL connection
+// NETWORK SETUP
+const app = express();
+app.use(express.json());
+app.use(cors({
+    origin: "http://localhost",
+    methods: ["GET", "POST"],
+    credentials: true
+}));
+
+// SQL CONNECTION
 const connection = mysql.createConnection({
     host: MYSQLHOST,
     user: MYSQLUSER,
@@ -42,19 +41,18 @@ const connection = mysql.createConnection({
     database: "users", 
 });
 
-// SQL statements
-// update, now SELECT role as well from the DB
+// SQL CONSTANTS
 const REGISTERSQL = "INSERT INTO users (username, password, email, salt, role) VALUES (?, ?, ?, ?, ?)";
 const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; 
+const INSERT_LOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
 
-//Use dynamic import bc node-fetch
+// ASYNC SETUP
 let fetch;
 (async () => {
     fetch = (await import('node-fetch')).default;
 })();
 
-
-//  Registration //
+// REGISTRATION 
 app.post("/register", (req, res) => {
     let { username, email, password, role = "member" } = req.body;
 
@@ -72,21 +70,20 @@ app.post("/register", (req, res) => {
         return res.status(400).send("Invalid email");
     };
 
-    //generate new salt and hash with pepper
+    // generate password hash
     bcrypt.genSalt(SALTROUNDS, (err, salt) => {
         if (err) {
             console.error("Error generating salt:", err);
             return res.status(500).send("Error generating salt");
         }
 
-        //salt + password + PEPPER, then hash
         bcrypt.hash(salt + password + PEPPER, SALTROUNDS, (err, hash) => {
             if (err) {
                 console.error("Error hashing password:", err);
                 return res.status(500).send("Error generating hash");
             }
 
-            //store user
+            // store user information
             connection.query(REGISTERSQL, [username, hash, email, salt, role], (error, results) => {
                 if (error) {
                     if (error.code === "ER_DUP_ENTRY") {
@@ -104,7 +101,7 @@ app.post("/register", (req, res) => {
     });
 });
 
-//  Login //
+// LOGIN 
 app.post("/login", (req, res) => {
     const { inputusername, inputpassword } = req.body;
     console.log(`Login attempt for user: \"${inputusername}\"`);
@@ -115,6 +112,7 @@ app.post("/login", (req, res) => {
         return res.status(400).send("Invalid characters");
     };
 
+    // check if username in database
     connection.query(LOGINSQL, [inputusername], (error, results) => {
         if (error) {
             console.error("Database error:", error.message);
@@ -125,26 +123,24 @@ app.post("/login", (req, res) => {
             return res.status(404).send("User not found");
         }
 
-        //extract hashed password, salt, and email
-        const dbHash  = results[0].password;
-        const dbSalt  = results[0].salt;
-        const dbEmail = results[0].email;
-        // (2) NEW: fetch role from DB result
-        const dbRole  = results[0].role;  // <-- ADDED LINE
+        let dbHash  = results[0].password;
+        let dbSalt  = results[0].salt;
+        let dbEmail = results[0].email;
+        let dbRole  = results[0].role;
 
         //compare the combination of salt + user input + pepper to the stored hash
         bcrypt.compare(dbSalt + inputpassword + PEPPER, dbHash)
             .then((isMatch) => {
                 if (isMatch) {
-                    // password correct: generate JWT
-                    const token = jwt.sign(
+                    // generate cookie on success
+                    let token = jwt.sign(
                         { email: dbEmail, username: inputusername, role: dbRole },
                         JWTSECRET,
                         { expiresIn: "1h" }
                     );
                     console.log(`User ${inputusername} logged in, returning token: ${token}`);
 
-                    //return token in JSON, so frontend can store it as a cookie
+                    //return cookie to frontend
                     return res.status(200).json({ token });
                 } else {
                     console.log("Password incorrect");
@@ -158,15 +154,16 @@ app.post("/login", (req, res) => {
     });
 });
 
-// TOTP Verification //
+// TIME-BASED ONE-TIME PASSWORD 
 app.post("/totp", (req, res) => {
-    const { totpInput } = req.body;
+    let { totpInput } = req.body;
     console.log("TOTP received:", totpInput);
+
     //generate current 6-digit TOTP using HMAC
-    const hmac = crypto.createHmac("sha256", TOTPSECRET);
-    const timestamp = Math.floor(Date.now() / 1000 / 30);
+    let hmac = crypto.createHmac("sha256", TOTPSECRET);
+    let timestamp = Math.floor(Date.now() / 1000 / 30);
     hmac.update(Buffer.from(timestamp.toString()));
-    const result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
+    let result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
 
     if (totpInput === result) {
         console.log("TOTP verification successful");
@@ -177,17 +174,17 @@ app.post("/totp", (req, res) => {
     }
 });
 
-// Validate Token //
+// TOKEN VALIDATION 
 app.post("/validateToken", (req, res) => {
     // extract token from auth header
-    const token = req.headers.authorization?.split(" ")[1];
+    let token = req.headers.authorization?.split(" ")[1];
     if (!token) {
         return res.status(401).send("Unauthorized: No token provided");
     }
 
     try {
         //verify token with JWTSECRET
-        const decoded = jwt.verify(token, JWTSECRET);
+        let decoded = jwt.verify(token, JWTSECRET);
         console.log("Token validated successfully:", decoded);
         // If valid, return 200 with user info
         return res.status(200).json({ valid: true, user: decoded });
@@ -197,9 +194,10 @@ app.post("/validateToken", (req, res) => {
     }
 });
 
+// VALIDATION
 app.get("/protectedResource", async (req, res) => {
     try {
-        const user = await validateToken(req.headers.authorization);
+        let user = await validateToken(req.headers.authorization);
         //Proceed with access
         res.status(200).json({ message: "Access granted", user });
     } catch (err) {
@@ -207,13 +205,11 @@ app.get("/protectedResource", async (req, res) => {
     }
 });
 
-// Add logging endpoint
+// ACCESS LOGGING 
 app.post("/log", async (req, res) => {
-    const { user, dataaccessed, success } = req.body;
-    const id = uuidv4();
-    const timeaccessed = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-    const INSERT_LOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
+    let { user, dataaccessed, success } = req.body;
+    let id = uuidv4();
+    let timeaccessed = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
     connection.query(INSERT_LOG, [id, user, timeaccessed, dataaccessed, success], (error, results) => {
         if (error) {
@@ -224,14 +220,14 @@ app.post("/log", async (req, res) => {
     });
 });
 
-// Add get logs endpoint (admin only)
+// LOGS 
 app.get("/logs", async (req, res) => {
     try {
-        const user = await validateToken(req.headers.authorization);
+        let user = await validateToken(req.headers.authorization);
         
         if (user.role !== 'admin') {
             // Log the failed attempt
-            const logData = {
+            let logData = {
                 user: user.username,
                 dataaccessed: 'logs',
                 success: 'false'
@@ -247,7 +243,7 @@ app.get("/logs", async (req, res) => {
         }
 
         // Log the successful access attempt
-        const logData = {
+        let logData = {
             user: user.username,
             dataaccessed: 'logs',
             success: 'true'
@@ -273,17 +269,14 @@ app.get("/logs", async (req, res) => {
     }
 });
 
-app.listen(PORT, HOST, () => {
-    console.log(`User Management API running on http://${HOST}:${PORT}`);
-});
-
+// TOKEN VALIDATION 
 async function validateToken(authHeader) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         throw new Error("No token provided");
     }
-    const token = authHeader.split(" ")[1];
+    let token = authHeader.split(" ")[1];
 
-    const validationResponse = await fetch("http://user-management-api:5002/validateToken", {
+    let validationResponse = await fetch("http://user-management-api:5002/validateToken", {
         method: "POST",
         headers: {
             Authorization: `Bearer ${token}`,
@@ -292,13 +285,18 @@ async function validateToken(authHeader) {
     });
 
     if (!validationResponse.ok) {
-        const error = await validationResponse.text();
+        let error = await validationResponse.text();
         throw new Error(error);
     }
 
-    const validationData = await validationResponse.json();
+    let validationData = await validationResponse.json();
     console.log("Token validated successfully:", validationData);
 
     // expect validationData.user to have { username, email, role, iat, exp, ... }
     return validationData.user;
 }
+
+// LISTEN ON PORT
+app.listen(PORT, HOST, () => {
+    console.log(`User Management API running on http://${HOST}:${PORT}`);
+});

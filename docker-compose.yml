@@ -2,6 +2,7 @@ version: '3'
 services:
   # ~~~~ user server setup ~~~~ #
   mysql-users:
+    container_name: user-sql
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=example
@@ -32,6 +33,7 @@ services:
 
   # ~~~~ data server setup ~~~~ #
   mysql-quack:
+    container_name: quack-sql
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=example
@@ -43,7 +45,7 @@ services:
 
   server-data:
     container_name: server-data
-    build: ./servers/server-data
+    build: ./server-data
     environment:
       - HOST=0.0.0.0
       - PORT=80
@@ -52,8 +54,8 @@ services:
       - MYSQLPASS=example
       - JWTSECRET=your_secret_key
     volumes:
-      - ./servers/server-data/backend-data:/app/backend-data
-      - ./servers/server-data/frontend-data:/app/frontend-data
+      - ./server-data/backend-data:/app/backend-data
+      - ./server-data/frontend-data:/app/frontend-data
     depends_on:
       - mysql-quack
     networks:
@@ -63,6 +65,7 @@ services:
 
   # ~~~ TOTP authenticator ~~~~ #
   authenticator:
+    container_name: authenticator
     build: ./authenticator
     environment:
       - TOTPSECRET=secretysecret
