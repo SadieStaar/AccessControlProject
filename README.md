@@ -21,6 +21,13 @@ The **Access Control Project** is a dockerized application testing user authenti
 - **JWT Validation**: Protects the Data API by verifying tokens via the User Management API
 - **Separate MySQL Databases**: One for user credentials, one for "quack" data
 - **Containerized**: Each service runs in its own Docker container
+- **Audit Logging System**:
+  - UUID-based log entries for each data access attempt
+  - Tracks user identity, timestamp, accessed resource, and success/failure status
+  - Admin-only access to log viewing interface
+  - Visual statistics for security analysis
+  - Real-time logging of all data access attempts
+  - Automatic logging of unauthorized access attempts
 
 ---
 
@@ -77,6 +84,15 @@ The **Access Control Project** is a dockerized application testing user authenti
      - **POST /validateToken**  
        - Expects `Authorization: Bearer <token>`.  
        - Verifies the JWT's signature and expiry. Returns 200 if valid, 401 if invalid.
+     - **POST /log**  
+       - Records access attempts with UUID, username, timestamp, and status
+       - Accepts JSON body with `user`, `dataaccessed`, and `success`
+       - Returns 201 on successful log creation
+     - **GET /logs**  
+       - Admin-only endpoint for accessing audit logs
+       - Returns chronologically ordered access history
+       - Self-logs access attempts (both successful and failed)
+       - Returns 403 for non-admin users
 
 2. **Data API (server-data)**
    - **Port**: 80  
@@ -97,6 +113,9 @@ The **Access Control Project** is a dockerized application testing user authenti
        - Checks `Authorization: Bearer <token>`.  
        - Calls user-management-api's `/validateToken`.  
        - If valid and role is admin, returns data from the `quack_stats` DB; otherwise 403 or 401.
+     - Automatic logging of all data access attempts
+     - Integration with user-management-api's logging system
+     - Tracks successful and failed query attempts
 
 3. **MySQL Containers**
    - **mysql-users**: Initializes the `users` DB from `sql-users/users.sql`.  
@@ -167,6 +186,29 @@ The **Access Control Project** is a dockerized application testing user authenti
 
 ---
 
+## Admin Interface
+The admin interface includes a new logging dashboard accessible at `/adminquery.html`:
+- **Access Statistics**:
+  - Total number of access attempts
+  - Successful vs. failed access counts
+  - Real-time statistics updates
+- **Log Table View**:
+  - Chronological list of all access attempts
+  - Color-coded success/failure indicators
+  - Detailed information including:
+    - Timestamp
+    - Username
+    - Accessed resource
+    - Access status
+
+## Security Features
+- **Comprehensive Audit Trail**:
+  - All data access attempts are logged
+  - Failed authentication attempts are tracked
+  - Admin access to logs is itself logged
+  - UUID-based log entry identification
+  - Human-readable timestamps
+  - Success/failure status tracking
 
 Run `docker-compose up` in the project directory to start the application. Turn off the server-data container, and the user-management-api while the SQL containers are starting to avoid `ECONNREFUSED` errors. Once, the users-sql and quack-sql containers are ready for connections, start the server-data and user-management-api containers.
 Then you can continue to register, login, and activate authenticator in docker to get your TOTP code. Now you can query.
