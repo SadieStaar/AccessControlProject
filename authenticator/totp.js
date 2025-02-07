@@ -6,4 +6,5 @@ const timestamp = Math.floor(Date.now() / 1000 / 30);
 hmac.update(Buffer.from(timestamp.toString()));
 let result = hmac.digest('hex').replace(/\D/g, '').slice(0, 6);
 
+console.log(`secret: ${SECRET}`);
 console.log(result);

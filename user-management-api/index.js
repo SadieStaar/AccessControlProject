@@ -44,7 +44,8 @@ const connection = mysql.createConnection({
 // SQL CONSTANTS
 const REGISTERSQL = "INSERT INTO users (username, password, email, salt, role) VALUES (?, ?, ?, ?, ?)";
 const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; 
-const INSERT_LOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
+const INSERTLOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
+const TOTPSQL = "SELECT totp_secret FROM users WHERE username = ?";
 
 // ASYNC SETUP
 let fetch;
@@ -156,22 +157,39 @@ app.post("/login", (req, res) => {
 
 // TIME-BASED ONE-TIME PASSWORD 
 app.post("/totp", (req, res) => {
-    let { totpInput } = req.body;
-    console.log("TOTP received:", totpInput);
+    let { totpInput, inputusername } = req.body;
+    console.log(`User ${inputusername} TOTP received: ${totpInput}`);
 
-    //generate current 6-digit TOTP using HMAC
-    let hmac = crypto.createHmac("sha256", TOTPSECRET);
-    let timestamp = Math.floor(Date.now() / 1000 / 30);
-    hmac.update(Buffer.from(timestamp.toString()));
-    let result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
+    //get user TOTP secret
+    connection.query(TOTPSQL, [inputusername], (error, results) => {
+        if (error) {
+            console.error("Database error:", error.message);
+            return res.status(500).send("Database error");
+        }
+        if(results.length === 0){
+            console.log("User not found in database");
+            return res.status(404).send("User not found");
+        }
+        //grab the user's totp secret
+        let totpsecret = results[0].totp_secret;
+        console.log(totpsecret);
 
-    if (totpInput === result) {
-        console.log("TOTP verification successful");
-        return res.status(200).send("Code verification successful");
-    } else {
-        console.log("TOTP failed");
-        return res.status(401).send("Code comparison failed");
+        //generate current 6-digit TOTP using HMAC
+        let hmac = crypto.createHmac("sha256", totpsecret);
+        let timestamp = Math.floor(Date.now() / 1000 / 30);
+        hmac.update(Buffer.from(timestamp.toString()));
+        let result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
+
+        if (totpInput === result) {
+            console.log("TOTP verification successful");
+            return res.status(200).send("Code verification successful");
+        } else {
+            console.log("TOTP failed");
+            return res.status(401).send("Code comparison failed");
     }
+    });
+
+    
 });
 
 // TOKEN VALIDATION 
@@ -211,7 +229,7 @@ app.post("/log", async (req, res) => {
     let id = uuidv4();
     let timeaccessed = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
-    connection.query(INSERT_LOG, [id, user, timeaccessed, dataaccessed, success], (error, results) => {
+    connection.query(INSERTLOG, [id, user, timeaccessed, dataaccessed, success], (error, results) => {
         if (error) {
             console.error("Error logging activity:", error);
             return res.status(500).json({ message: "Failed to log activity" });

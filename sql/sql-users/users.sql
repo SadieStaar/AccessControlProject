@@ -8,6 +8,7 @@ CREATE TABLE users (
     role     ENUM('member', 'premium', 'admin') NOT NULL,
     email    VARCHAR(255) NOT NULL,
     salt     VARCHAR(255) NOT NULL,
+    totp_secret VARCHAR(255) NOT NULL,
     PRIMARY KEY (username)
 );
 
@@ -18,7 +19,8 @@ VALUES(
     "$2b$10$31z3yI8coig/3nE8ae16UOWir18T2b3VC.PiAx9zPcuM8mkj6sjaa",
     "member",
     "user@example.com",
-    "abc1"
+    "abc1",
+    "secrety-secret"
 );
 
 -- premium user
@@ -28,7 +30,8 @@ VALUES(
     "$2b$10$31z3yI8coig/3nE8ae16UOWir18T2b3VC.PiAx9zPcuM8mkj6sjaa",
     "premium",
     "premium@example.com",
-    "abc1"
+    "abc1",
+    "secrety-secret PREMIUM"
 );
 
 -- admin
@@ -38,7 +41,8 @@ VALUES(
     "$2b$10$31z3yI8coig/3nE8ae16UOWir18T2b3VC.PiAx9zPcuM8mkj6sjaa",
     "admin",
     "user@example.com",
-    "abc1"
+    "abc1",
+    "secrety-secret ADMIN"
 );
 
 -- logs table

@@ -157,12 +157,23 @@ function submitTOTP() {
         return;
     }
 
+    let token = getCookie('token');
+    if (!token){
+        console.error("No token found, redirecting to login.");
+        alert("Invalid session. Please log in again.");
+        window.location.replace("login.html");
+        return;
+    }
+    let payload = JSON.parse(atob(token.split('.')[1]));
+    let inputusername = payload.username;
+    let role = payload.role;
+
     fetch("http://" + parsedUrl.hostname + ":5002/totp", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ totpInput }),
+        body: JSON.stringify({ totpInput, inputusername }),
     })
     .then((resp) => {
         switch (resp.status) {
@@ -170,12 +181,7 @@ function submitTOTP() {
             // success
             case 200:
                 console.log("TOTP verified. Redirecting based on role...");
-                let token = getCookie('token');
-        
-                if (token) {
-                    let payload = JSON.parse(atob(token.split('.')[1]));
-                    let role = payload.role;
-        
+
                     // load page based on role
                     switch (role) {
                         case 'member':
@@ -191,11 +197,6 @@ function submitTOTP() {
                             console.error("Unknown role, redirecting to default page.");
                             window.location.replace("index.html");
                     }
-                } else {
-                    console.error("No token found, redirecting to login.");
-                    alert("Invalid session. Please log in again.");
-                    window.location.replace("login.html");
-                }
                 break;
         
             case 401:
