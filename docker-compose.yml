@@ -64,8 +64,8 @@ services:
       - "80:80"
 
   # ~~~ TOTP authenticator ~~~~ #
-  auth-user:
-    container_name: auth-user
+  authenticator:
+    container_name: authenticator
     build: ./authenticator
     environment:
       - TOTPSECRET=secrety-secret

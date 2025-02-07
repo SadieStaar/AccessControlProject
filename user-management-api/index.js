@@ -42,7 +42,7 @@ const connection = mysql.createConnection({
 });
 
 // SQL CONSTANTS
-const REGISTERSQL = "INSERT INTO users (username, password, email, salt, role) VALUES (?, ?, ?, ?, ?)";
+const REGISTERSQL = "INSERT INTO users (username, password, email, salt, role, totp_secret) VALUES (?, ?, ?, ?, ?, ?)";
 const LOGINSQL = "SELECT password, salt, email, role FROM users WHERE username = ?"; 
 const INSERTLOG = "INSERT INTO logs (id, user, timeaccessed, dataaccessed, success) VALUES (?, ?, ?, ?, ?)";
 const TOTPSQL = "SELECT totp_secret FROM users WHERE username = ?";
@@ -84,8 +84,12 @@ app.post("/register", (req, res) => {
                 return res.status(500).send("Error generating hash");
             }
 
+            // generate user totp secret
+            let totpsecret = crypto.randomUUID();
+            console.log(`User TOTP secret: ${totpsecret}`);
+
             // store user information
-            connection.query(REGISTERSQL, [username, hash, email, salt, role], (error, results) => {
+            connection.query(REGISTERSQL, [username, hash, email, salt, role, totpsecret], (error, results) => {
                 if (error) {
                     if (error.code === "ER_DUP_ENTRY") {
                         console.error("User already in database");
@@ -176,7 +180,7 @@ app.post("/totp", (req, res) => {
 
         //generate current 6-digit TOTP using HMAC
         let hmac = crypto.createHmac("sha256", totpsecret);
-        let timestamp = Math.floor(Date.now() / 1000 / 30);
+        let timestamp = Math.floor(Date.now() / 1000 / 60);
         hmac.update(Buffer.from(timestamp.toString()));
         let result = hmac.digest("hex").replace(/\D/g, "").slice(0, 6);
 
