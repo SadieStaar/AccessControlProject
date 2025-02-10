@@ -17,7 +17,7 @@ The **Access Control Project** is a dockerized application testing user authenti
   - `member`: Access to basic data queries
   - `premium`: Access to extended data queries
   - `admin`: Full access, including administrative data queries
-- **Time-based One-Time Password (TOTP)**: A second factor of authentication
+- **Time-based One-Time Password (TOTP)**: A second factor of authentication that individual to each user
 - **JWT Validation**: Protects the Data API by verifying tokens via the User Management API
 - **Separate MySQL Databases**: One for user credentials, one for "quack" data
 - **Containerized**: Each service runs in its own Docker container
@@ -150,7 +150,7 @@ The **Access Control Project** is a dockerized application testing user authenti
 ## Authentication & TOTP Flow
 1. **Register** → Writes a new user into the `users` DB with an assigned role.  
 2. **Login** → Checks password with bcrypt. If correct, returns a JWT (expires in 1 hour) containing user roles.  
-3. **TOTP** → Verifies the 6-digit code is correct for that 30-second window.  
+3. **TOTP** → Verifies a 6-digit code unique to each user is correct for that 60-second window. To change users, replace the env variable under the auth-user to the appropriate totp secret.
 4. **Query** → The Data API checks the JWT by calling `/validateToken` and enforces role-based access.
 
 ---
