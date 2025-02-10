@@ -15,15 +15,7 @@ services:
   user-management-api:
     container_name: user-management-api
     build: ./user-management-api
-    environment:
-      - HOST=0.0.0.0
-      - PORT=5002
-      - MYSQLHOST=mysql-users
-      - MYSQLUSER=root
-      - MYSQLPASS=example
-      - PEPPER=802A
-      - TOTPSECRET=secretysecret
-      - JWTSECRET=othersecretysecret
+    env_file: ./user-management-api/.env
     depends_on:
       - mysql-users
     networks:
@@ -46,13 +38,7 @@ services:
   server-data:
     container_name: server-data
     build: ./server-data
-    environment:
-      - HOST=0.0.0.0
-      - PORT=80
-      - MYSQLHOST=mysql-quack
-      - MYSQLUSER=root
-      - MYSQLPASS=example
-      - JWTSECRET=your_secret_key
+    env_file: ./server-data/.env
     volumes:
       - ./server-data/backend-data:/app/backend-data
       - ./server-data/frontend-data:/app/frontend-data
