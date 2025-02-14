@@ -45,7 +45,7 @@ body {
 }
 .button-clear {
     background-color: transparent;
-    border: none;
+    border: black;
     color: transparent; /* Make text invisible */
     padding: 10px 30px;
     font-size: 35px;
