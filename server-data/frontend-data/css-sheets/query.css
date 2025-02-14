@@ -46,7 +46,7 @@ body {
 .button-clear {
     background-color: transparent;
     border: black;
-    color: transparent; /* Make text invisible */
+    color: whitesmoke; /* Make text invisible */
     padding: 10px 30px;
     font-size: 35px;
     cursor: pointer;
