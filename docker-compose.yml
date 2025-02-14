@@ -54,6 +54,7 @@ services:
     container_name: authenticator
     build: ./authenticator
     environment:
+    # change this to whatever key is needed
       - TOTPSECRET=secrety-secret
     volumes:
       - ./authenticator:/app

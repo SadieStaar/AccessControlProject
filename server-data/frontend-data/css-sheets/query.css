@@ -13,6 +13,13 @@ body {
 .content{
     margin-top: 5%;
     text-align: center;
+    background-color: whitesmoke;
+    padding-left:20px;
+    padding-right:20px;
+    padding-top:40px;
+    padding-bottom:40px;
+    border: aquamarine solid 10px;
+    border-radius: 10%;
 }
 .button {
     background-color: black;
@@ -43,7 +50,7 @@ body {
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 .title {
-    color: white;
+    color: black;
     text-align: center;
     font-size: 40px;
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;

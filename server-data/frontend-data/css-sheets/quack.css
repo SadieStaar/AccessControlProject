@@ -18,9 +18,7 @@ body {
     padding-right:20px;
     padding-top:40px;
     padding-bottom:40px;
-    border-style: solid;
-    border-color: aquamarine;
-    border-width: 10px;
+    border: aquamarine solid 10px;
     border-radius: 10%;
 }
 .button {

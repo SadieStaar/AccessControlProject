@@ -378,3 +378,8 @@ function queryQuackStats() {
         alert("Failed to fetch quack stats. Please try again.");
     });
 }
+
+// SECRET
+function toSecret() {
+    window.location.replace("secret.html");
+}
