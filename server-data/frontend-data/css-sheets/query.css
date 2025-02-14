@@ -43,6 +43,20 @@ body {
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     cursor: pointer;
 }
+.button-clear {
+    background-color: transparent;
+    border: none;
+    color: transparent; /* Make text invisible */
+    padding: 10px 30px;
+    font-size: 35px;
+    cursor: pointer;
+    position: right top; 
+    width: 100px; 
+    height: 50px;
+}
+.button-clear:hover {
+    background-color: rgba(0, 0, 0, 0.1); /* Slight highlight on hover if needed */
+}
 .textbox {
     padding: 10px;
     font-size: 25px;
